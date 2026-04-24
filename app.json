@@ -43,6 +43,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7be653a9-b1e4-4461-bd44-219cc87f923d"
+      }
+    },
+    "owner": "cireon"
   }
 }
