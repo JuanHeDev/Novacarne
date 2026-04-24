@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -14,7 +15,7 @@ function getGreeting() {
 export default function Entradas() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const [isDark, setIsDark] = useState(false);
+  const { isDark, setIsDark, toggleTheme, colors } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const [nuevoLoteActivo, setNuevoLoteActivo] = useState(false);
   const greeting = getGreeting();
@@ -25,97 +26,97 @@ export default function Entradas() {
   const cardWidth = isWeb ? 450 : isMobile ? width * 0.9 : 400;
   const cardPadding = isWeb ? 32 : 24;
 
-  const containerBg = isDark ? '#1a1a2e' : '#1a365d';
-  const cardBg = isDark ? '#2a2a4e' : '#ffffff';
-  const textColor = isDark ? '#ffffff' : '#333333';
-
   return (
-    <View style={[styles.container, { backgroundColor: containerBg }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#ffffff" />
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={[styles.backButton, { backgroundColor: colors.accent }]}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
 
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setIsDark(!isDark)}
+            style={[styles.iconButton, { backgroundColor: colors.accent }]}
+            onPress={toggleTheme}
           >
             <MaterialCommunityIcons
               name={isDark ? 'weather-night' : 'white-balance-sunny'}
               size={24}
-              color="#ffffff"
+              color="#fff"
             />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.iconButton}
+            style={[styles.iconButton, { backgroundColor: colors.accent }]}
             onPress={() => setShowMenu(!showMenu)}
           >
-            <MaterialCommunityIcons name="account" size={24} color="#ffffff" />
+            <MaterialCommunityIcons name="account" size={24} color="#fff" />
           </TouchableOpacity>
 
           {showMenu && (
-            <View style={styles.menu}>
+            <View style={[styles.menu, { backgroundColor: colors.card }]}>
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => setShowMenu(false)}
               >
-                <MaterialCommunityIcons name="logout" size={20} color="#ffffff" />
-                <Text style={styles.menuItemText}>Cerrar sesión</Text>
+                <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
+                <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
       </View>
 
-      <View style={[styles.mainCard, { backgroundColor: cardBg, width: cardWidth, padding: cardPadding }]}>
+      <View style={[styles.mainCard, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
         <View style={styles.logoSection}>
-          <View style={styles.logoContainer}>
+          <View style={[styles.logoContainer, { borderColor: colors.accent }]}>
             <Image
               source={require('../assets/images/NOVACARNE.png')}
               style={styles.logoImage}
               contentFit="contain"
             />
           </View>
+          <Text style={[styles.title, { color: colors.text }]}>{greeting}</Text>
         </View>
 
         <View style={styles.contentColumn}>
           <TouchableOpacity 
-            style={[styles.mainButton, !nuevoLoteActivo && styles.mainButtonDisabled]}
+            style={[styles.mainButton, { backgroundColor: colors.accent }]}
             onPress={() => setNuevoLoteActivo(true)}
           >
-            <MaterialCommunityIcons name="plus" size={20} color="#ffffff" />
-            <Text style={[styles.mainButtonText, !nuevoLoteActivo && styles.mainButtonTextDisabled]}>Nuevo lote</Text>
+            <MaterialCommunityIcons name="plus" size={20} color={isDark ? colors.background : colors.card} />
+            <Text style={[styles.mainButtonText, { color: isDark ? colors.background : colors.card }]}>Nuevo lote</Text>
           </TouchableOpacity>
 
           <View style={styles.stepsContainer}>
             <TouchableOpacity 
-              style={[styles.subButton, !nuevoLoteActivo && styles.subButtonDisabled]}
+              style={[styles.subButton, { borderColor: colors.accent }]}
               disabled={!nuevoLoteActivo}
             >
-              <MaterialCommunityIcons name="pig" size={24} color={nuevoLoteActivo ? textColor : '#ccc'} />
-              <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? textColor : '#ccc' }]}>
+              <MaterialCommunityIcons name="pig" size={24} color={nuevoLoteActivo ? colors.text : '#aaa'} />
+              <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? colors.text : '#aaa' }]}>
                 1. Canal (cerdo)
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.subButton, !nuevoLoteActivo && styles.subButtonDisabled]}
+              style={[styles.subButton, { borderColor: colors.accent }]}
               disabled={!nuevoLoteActivo}
             >
-              <MaterialCommunityIcons name="knife" size={24} color={nuevoLoteActivo ? textColor : '#ccc'} />
-              <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? textColor : '#ccc' }]}>
+              <MaterialCommunityIcons name="knife" size={24} color={nuevoLoteActivo ? colors.text : '#aaa'} />
+              <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? colors.text : '#aaa' }]}>
                 2. Despiece
               </Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.consultButton}>
-            <MaterialCommunityIcons name="clipboard-list" size={28} color="#ffffff" />
-            <Text style={styles.consultButtonText}>Consultar lotes</Text>
+          <TouchableOpacity style={[styles.consultButton, { backgroundColor: colors.accent }]}>
+            <MaterialCommunityIcons name="clipboard-list" size={28} color={isDark ? colors.background : colors.card} />
+            <Text style={[styles.consultButtonText, { color: isDark ? colors.background : colors.card }]}>Consultar lotes</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -139,7 +140,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -152,7 +152,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -160,10 +159,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     right: 0,
-    backgroundColor: '#2a2a4e',
     borderRadius: 8,
     padding: 8,
     minWidth: 150,
+    elevation: 4,
   },
   menuItem: {
     flexDirection: 'row',
@@ -171,7 +170,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   menuItemText: {
-    color: '#ffffff',
     marginLeft: 8,
     fontSize: 14,
   },
@@ -191,7 +189,6 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     overflow: 'hidden',
     borderWidth: 3,
-    borderColor: '#1a365d',
     marginBottom: 16,
   },
   logoImage: {
@@ -207,7 +204,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mainButton: {
-    backgroundColor: '#1a365d',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -218,16 +214,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  mainButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
   mainButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  mainButtonTextDisabled: {
-    color: '#666',
   },
   stepsContainer: {
     width: '100%',
@@ -238,25 +227,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     gap: 12,
   },
-  subButtonsSection: {
-    width: '100%',
-    marginBottom: 20,
-    gap: 12,
-  },
   subButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1a365d',
   },
-subButtonDisabled: {
-    borderColor: '#ddd',
-    opacity: 0.6,
+  subButtonText: {
+    marginLeft: 12,
+    fontSize: 14,
+    fontWeight: '500',
   },
   consultButton: {
-    backgroundColor: '#1a365d',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -266,7 +249,6 @@ subButtonDisabled: {
     justifyContent: 'center',
   },
   consultButtonText: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
     marginLeft: 8,
