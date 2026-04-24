@@ -28,7 +28,7 @@ export default function Entradas() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       <View style={styles.header}>
         <TouchableOpacity 
@@ -80,7 +80,6 @@ export default function Entradas() {
               contentFit="contain"
             />
           </View>
-          <Text style={[styles.title, { color: colors.text }]}>{greeting}</Text>
         </View>
 
         <View style={styles.contentColumn}>
@@ -96,6 +95,7 @@ export default function Entradas() {
             <TouchableOpacity 
               style={[styles.subButton, { borderColor: colors.accent }]}
               disabled={!nuevoLoteActivo}
+              onPress={() => nuevoLoteActivo && router.push('/peso-canal')}
             >
               <MaterialCommunityIcons name="pig" size={24} color={nuevoLoteActivo ? colors.text : '#aaa'} />
               <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? colors.text : '#aaa' }]}>

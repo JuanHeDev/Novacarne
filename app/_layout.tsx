@@ -3,11 +3,11 @@ import { Slot } from 'expo-router';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 
 function RootLayoutContent() {
-  const { isDark, colors } = useTheme();
+  const { colors } = useTheme();
   
   return (
     <>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style={colors.background === '#efe3ca' ? 'dark' : 'light'} />
       <Slot />
     </>
   );
