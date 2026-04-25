@@ -1,30 +1,60 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Buenos días';
-  if (hour < 18) return 'Buenas tardes';
-  return 'Buenas noches';
-}
 
 export default function Entradas() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
-  const { isDark, setIsDark, toggleTheme, colors } = useTheme();
+  const { isDark, toggleTheme, colors } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const [nuevoLoteActivo, setNuevoLoteActivo] = useState(false);
-  const greeting = getGreeting();
+  const [canalCompletado, setCanalCompletado] = useState(false);
+  const [despieceHabilitado, setDespieceHabilitado] = useState(false);
+  const [despieceCompletado, setDespieceCompletado] = useState(false);
+
+  useEffect(() => {
+    if (params.despiece === 'true') {
+      setDespieceHabilitado(true);
+      setCanalCompletado(true);
+      setNuevoLoteActivo(false);
+    }
+    if (params.despieceCompletado === 'true') {
+      setDespieceHabilitado(true);
+      setDespieceCompletado(true);
+      setCanalCompletado(true);
+      setNuevoLoteActivo(false);
+    }
+  }, [params]);
 
   const isMobile = width < 768;
   const isWeb = width >= 1024;
 
   const cardWidth = isWeb ? 450 : isMobile ? width * 0.9 : 400;
   const cardPadding = isWeb ? 32 : 24;
+
+  const handleNuevoLote = () => {
+    setNuevoLoteActivo(true);
+  };
+
+  const handleCanal = () => {
+    router.push('/peso-canal');
+  };
+
+  const handleFinalizarLote = () => {
+    setCanalCompletado(true);
+    setDespieceHabilitado(false);
+    setDespieceCompletado(false);
+  };
+
+  const handleReiniciar = () => {
+    setNuevoLoteActivo(true);
+    setCanalCompletado(false);
+    setDespieceHabilitado(false);
+    setDespieceCompletado(false);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -72,52 +102,72 @@ export default function Entradas() {
       </View>
 
       <View style={[styles.mainCard, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
-        <View style={styles.logoSection}>
-          <View style={[styles.logoContainer, { borderColor: colors.accent }]}>
-            <Image
-              source={require('../assets/images/NOVACARNE.png')}
-              style={styles.logoImage}
-              contentFit="contain"
-            />
-          </View>
-        </View>
-
+        <Image
+            source={require('../assets/images/cuchillo.png')}
+            style={styles.iconImage}
+        />
         <View style={styles.contentColumn}>
-          <TouchableOpacity 
-            style={[styles.mainButton, { backgroundColor: colors.accent }]}
-            onPress={() => setNuevoLoteActivo(true)}
-          >
-            <MaterialCommunityIcons name="plus" size={20} color={isDark ? colors.background : colors.card} />
-            <Text style={[styles.mainButtonText, { color: isDark ? colors.background : colors.card }]}>Nuevo lote</Text>
-          </TouchableOpacity>
-
-          <View style={styles.stepsContainer}>
+          {!nuevoLoteActivo && !canalCompletado ? (
             <TouchableOpacity 
-              style={[styles.subButton, { borderColor: colors.accent }]}
+              style={[styles.mainButton, { backgroundColor: colors.accent }]}
+              onPress={handleNuevoLote}
+            >
+              <MaterialCommunityIcons name="plus" size={20} color={isDark ? colors.background : colors.card} />
+              <Text style={[styles.mainButtonText, { color: isDark ? colors.background : colors.card }]}>Nuevo lote</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              style={[styles.mainButton, { backgroundColor: '#888' }]}
+              disabled
+            >
+              <MaterialCommunityIcons name="plus" size={20} color="#fff" />
+              <Text style={[styles.mainButtonText, { color: '#fff' }]}>Nuevo lote</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={[styles.stepsContainer, { borderColor: colors.accent }]}>
+            <TouchableOpacity 
+              style={[styles.subButton, { borderColor: nuevoLoteActivo ? colors.accent : '#aaa' }]}
               disabled={!nuevoLoteActivo}
-              onPress={() => nuevoLoteActivo && router.push('/peso-canal')}
+              onPress={handleCanal}
             >
               <MaterialCommunityIcons name="pig" size={24} color={nuevoLoteActivo ? colors.text : '#aaa'} />
               <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? colors.text : '#aaa' }]}>
-                1. Canal (cerdo)
+                1. Canal
               </Text>
+              {canalCompletado && (
+                <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" style={{ marginLeft: 8 }} />
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.subButton, { borderColor: colors.accent }]}
-              disabled={!nuevoLoteActivo}
+              style={[
+                styles.subButton, 
+                { borderColor: despieceHabilitado || despieceCompletado ? colors.accent : '#aaa' },
+                despieceCompletado && styles.subButtonCompletado
+              ]}
+              disabled={!despieceHabilitado && !despieceCompletado}
+              onPress={() => router.push('/despiece')}
             >
-              <MaterialCommunityIcons name="knife" size={24} color={nuevoLoteActivo ? colors.text : '#aaa'} />
-              <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? colors.text : '#aaa' }]}>
+              <MaterialCommunityIcons name="knife" size={24} color={despieceHabilitado || despieceCompletado ? colors.text : '#aaa'} />
+              <Text style={[styles.subButtonText, { color: despieceHabilitado || despieceCompletado ? colors.text : '#aaa' }]}>
                 2. Despiece
               </Text>
+              {despieceCompletado && (
+                <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" style={{ marginLeft: 8 }} />
+              )}
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={[styles.consultButton, { backgroundColor: colors.accent }]}>
-            <MaterialCommunityIcons name="clipboard-list" size={28} color={isDark ? colors.background : colors.card} />
-            <Text style={[styles.consultButtonText, { color: isDark ? colors.background : colors.card }]}>Consultar lotes</Text>
-          </TouchableOpacity>
+          {canalCompletado && (
+            <TouchableOpacity 
+              style={[styles.finalizarButton, { backgroundColor: colors.accent }]}
+              onPress={handleReiniciar}
+            >
+              <MaterialCommunityIcons name="check" size={20} color={isDark ? colors.background : colors.card} />
+              <Text style={[styles.finalizarButtonText, { color: isDark ? colors.background : colors.card }]}>Finalizar lote</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -179,25 +229,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 20,
   },
-  logoSection: {
+  iconSection: {
     alignItems: 'center',
     marginBottom: 24,
   },
-  logoContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 32,
-    overflow: 'hidden',
-    borderWidth: 3,
+  iconImage: {
+    width: 120,
+    height: 120,
     marginBottom: 16,
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
   },
   contentColumn: {
     width: '100%',
@@ -221,7 +260,6 @@ const styles = StyleSheet.create({
   stepsContainer: {
     width: '100%',
     borderWidth: 2,
-    borderColor: '#888888',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -233,13 +271,17 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  subButtonCompletado: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
   },
   subButtonText: {
     marginLeft: 12,
     fontSize: 14,
     fontWeight: '500',
   },
-  consultButton: {
+  finalizarButton: {
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -247,10 +289,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  finalizarButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  consultButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
   consultButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
-    marginLeft: 8,
   },
 });

@@ -13,7 +13,7 @@ interface PesoRegistro {
 
 type RegistrosMap = Record<number, number>;
 
-export default function PesCanal() {
+export default function PesoCanal() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { isDark, toggleTheme, colors } = useTheme();
@@ -46,7 +46,12 @@ export default function PesCanal() {
     }));
     setRegistros([...registros, ...nuevosRegistros]);
     console.log('Registros guardados:', nuevosRegistros);
+    
+    const numCanales = nuevosRegistros.length;
+    const pesoTotal = nuevosRegistros.reduce((sum, r) => sum + r.peso, 0);
+    
     setShowFinalizarModal(false);
+    router.replace({ pathname: '/lotes-entrada', params: { numCanales: String(numCanales), pesoTotal: String(pesoTotal) } });
   };
 
   const handlePrev = () => {

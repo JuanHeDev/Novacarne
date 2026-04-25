@@ -23,15 +23,16 @@ export default function Index() {
   const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 
-  const cardWidth = isWeb ? 500 : isTablet ? 420 : width * 0.85;
-  const cardPadding = isWeb ? 40 : isTablet ? 32 : 24;
-  const logoSize = isWeb ? 120 : isTablet ? 100 : 90;
-  const fontSize = isWeb ? 28 : isTablet ? 24 : 20;
-  const buttonIconSize = isWeb ? 36 : isTablet ? 32 : 28;
+  const cardWidth = isWeb ? 700 : isTablet ? 450 : width * 0.85;
+  const cardPadding = isWeb ? 48 : isTablet ? 32 : 24;
+  const logoSize = isWeb ? 160 : isTablet ? 100 : 90;
+  const fontSize = isWeb ? 32 : isTablet ? 24 : 20;
+  const buttonIconSize = isWeb ? 40 : isTablet ? 32 : 28;
+  const buttonSize = isWeb ? 70 : isTablet ? 60 : 50;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       <View style={styles.headerButtons}>
         <TouchableOpacity
@@ -143,8 +144,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     maxWidth: 500,
+    padding: 24,
   },
-  logoImage: {
+logoImage: {
     borderWidth: 3,
     borderColor: '#170c79',
   },
@@ -152,14 +154,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 16,
   },
+  buttonLabel: {
+    fontWeight: '500',
+    fontSize: 12,
+  },
   buttonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
+    gap: 16,
   },
   button: {
     alignItems: 'center',
     padding: 12,
+    minWidth: 60,
   },
   buttonLabel: {
     fontWeight: '500',
