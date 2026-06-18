@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const proveedores = [
   { id: 1, nombre: 'Proveedor A' },
@@ -44,6 +44,9 @@ export default function LotesEntrada() {
         </TouchableOpacity>
 
         <View style={styles.headerRight}>
+          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
+            <MaterialCommunityIcons name="home" size={24} color="#fff" />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconButton, { backgroundColor: colors.accent }]}
             onPress={toggleTheme}
@@ -82,7 +85,7 @@ export default function LotesEntrada() {
         <View style={styles.infoRow}>
           <View style={styles.iconColumn}>
             <Image
-              source={require('../assets/images/cerdo.png')}
+              source={require('../../assets/images/cerdo.png')}
               style={styles.pigIcon}
               contentFit="contain"
             />
@@ -151,7 +154,7 @@ export default function LotesEntrada() {
             styles.acceptButton, 
             { backgroundColor: proveedorSeleccionado ? colors.accent : '#888' }
           ]}
-          onPress={() => proveedorSeleccionado && router.push({ pathname: '/entradas', params: { despiece: 'true' } })}
+          onPress={() => proveedorSeleccionado && router.push({ pathname: '/entradas', params: { canal: 'true' } })}
           disabled={!proveedorSeleccionado}
         >
           <Text style={[styles.acceptButtonText, { color: '#fff' }]}>Aceptar</Text>

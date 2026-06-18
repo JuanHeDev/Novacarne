@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface PesoRegistro {
   numCanal: number;
@@ -51,7 +51,7 @@ export default function PesoCanal() {
     const pesoTotal = nuevosRegistros.reduce((sum, r) => sum + r.peso, 0);
     
     setShowFinalizarModal(false);
-    router.replace({ pathname: '/lotes-entrada', params: { numCanales: String(numCanales), pesoTotal: String(pesoTotal) } });
+    router.replace({ pathname: '/entradas/lotes-entrada', params: { numCanales: String(numCanales), pesoTotal: String(pesoTotal) } });
   };
 
   const handlePrev = () => {
@@ -95,7 +95,10 @@ export default function PesoCanal() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity
+            <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
+            <MaterialCommunityIcons name="home" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity
               style={[styles.iconButton, { backgroundColor: colors.accent }]}
               onPress={toggleTheme}
             >
@@ -131,7 +134,7 @@ export default function PesoCanal() {
           <View style={styles.iconSection}>
             <Text style={[styles.title, { color: colors.text }]}>Peso/Canal</Text>
             <Image
-              source={require('../assets/images/canal.png')}
+              source={require('../../assets/images/canal.png')}
               style={styles.iconImage}
               contentFit="contain"
             />

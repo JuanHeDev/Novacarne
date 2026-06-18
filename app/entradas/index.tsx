@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function Entradas() {
   const router = useRouter();
@@ -16,31 +16,31 @@ export default function Entradas() {
   const [despieceCompletado, setDespieceCompletado] = useState(false);
 
   useEffect(() => {
-    if (params.despiece === 'true') {
-      setDespieceHabilitado(true);
+    if (params.canal === 'true') {
       setCanalCompletado(true);
+      setDespieceHabilitado(true);
       setNuevoLoteActivo(false);
     }
-    if (params.despieceCompletado === 'true') {
-      setDespieceHabilitado(true);
+    if (params.despiece === 'true') {
       setDespieceCompletado(true);
-      setCanalCompletado(true);
-      setNuevoLoteActivo(false);
     }
   }, [params]);
 
   const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 
-  const cardWidth = isWeb ? 450 : isMobile ? width * 0.9 : 400;
-  const cardPadding = isWeb ? 32 : 24;
+  const cardWidth = isWeb ? 500 : isTablet ? 450 : width * 0.9;
+  const cardPadding = isWeb ? 32 : isTablet ? 28 : 24;
+  const titleSize = isWeb ? 28 : isTablet ? 24 : 20;
+  const bodySize = isWeb ? 16 : isTablet ? 15 : 14;
 
   const handleNuevoLote = () => {
     setNuevoLoteActivo(true);
   };
 
   const handleCanal = () => {
-    router.push('/peso-canal');
+    router.push('/entradas/peso-canal');
   };
 
   const handleFinalizarLote = () => {
@@ -69,6 +69,9 @@ export default function Entradas() {
         </TouchableOpacity>
 
         <View style={styles.headerRight}>
+          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
+            <MaterialCommunityIcons name="home" size={24} color="#fff" />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconButton, { backgroundColor: colors.accent }]}
             onPress={toggleTheme}
@@ -103,7 +106,7 @@ export default function Entradas() {
 
       <View style={[styles.mainCard, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
         <Image
-            source={require('../assets/images/cuchillo.png')}
+            source={require('../../assets/images/cuchillo.png')}
             style={styles.iconImage}
         />
         <View style={styles.contentColumn}>
@@ -147,7 +150,7 @@ export default function Entradas() {
                 despieceCompletado && styles.subButtonCompletado
               ]}
               disabled={!despieceHabilitado && !despieceCompletado}
-              onPress={() => router.push('/despiece')}
+              onPress={() => router.push('/entradas/despiece')}
             >
               <MaterialCommunityIcons name="knife" size={24} color={despieceHabilitado || despieceCompletado ? colors.text : '#aaa'} />
               <Text style={[styles.subButtonText, { color: despieceHabilitado || despieceCompletado ? colors.text : '#aaa' }]}>
@@ -159,10 +162,16 @@ export default function Entradas() {
             </TouchableOpacity>
           </View>
 
-          {canalCompletado && (
+          {canalCompletado && despieceCompletado && (
             <TouchableOpacity 
               style={[styles.finalizarButton, { backgroundColor: colors.accent }]}
-              onPress={handleReiniciar}
+              onPress={() => {
+                setNuevoLoteActivo(false);
+                setCanalCompletado(false);
+                setDespieceHabilitado(false);
+                setDespieceCompletado(false);
+                router.replace('/');
+              }}
             >
               <MaterialCommunityIcons name="check" size={20} color={isDark ? colors.background : colors.card} />
               <Text style={[styles.finalizarButtonText, { color: isDark ? colors.background : colors.card }]}>Finalizar lote</Text>

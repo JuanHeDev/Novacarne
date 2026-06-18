@@ -35,6 +35,9 @@ export default function Index() {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       <View style={styles.headerButtons}>
+        <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
+          <MaterialCommunityIcons name="home" size={24} color="#fff" />
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.iconButton, { backgroundColor: colors.accent }]}
           onPress={toggleTheme}
