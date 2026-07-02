@@ -4,13 +4,14 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { isDark, toggleTheme, colors } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
-  const [usuario, setUsuario] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,16 +23,22 @@ export default function Login() {
   const cardPadding = isWeb ? 32 : isTablet ? 28 : 24;
   const logoSize = isWeb ? 130 : isTablet ? 110 : 90;
 
-  const handleLogin = () => {
-    if (!usuario.trim() || !password.trim()) {
-      Alert.alert('Campos vacíos', 'Por favor ingresa usuario y contraseña');
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Campos vacíos', 'Por favor ingresa correo y contraseña');
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) {
+      Alert.alert('Error', error.message);
       setLoading(false);
-      router.replace('/');
-    }, 800);
+      return;
+    }
+    router.replace('/');
   };
 
   return (
@@ -60,15 +67,16 @@ export default function Login() {
         <Text style={[styles.subtitle, { color: colors.text + '99' }]}>Ingresa tus credenciales</Text>
 
         <View style={[styles.inputContainer, { borderColor: colors.accent }]}>
-          <MaterialCommunityIcons name="account" size={20} color={colors.text + '99'} />
+          <MaterialCommunityIcons name="email" size={20} color={colors.text + '99'} />
           <TextInput
             style={[styles.input, { color: colors.text }]}
-            placeholder="Usuario"
+            placeholder="Correo electrónico"
             placeholderTextColor={colors.text + '66'}
-            value={usuario}
-            onChangeText={setUsuario}
+            value={email}
+            onChangeText={setEmail}
             autoCapitalize="none"
             autoCorrect={false}
+            keyboardType="email-address"
           />
         </View>
 

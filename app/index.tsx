@@ -2,8 +2,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Alert, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { supabase } from '../lib/supabase';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -58,13 +59,17 @@ export default function Index() {
 
         {showMenu && (
           <View style={[styles.menu, { backgroundColor: colors.card }]}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => setShowMenu(false)}
-            >
-              <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
-              <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={async () => {
+                  setShowMenu(false);
+                  const { error } = await supabase.auth.signOut();
+                  if (error) Alert.alert('Error', error.message);
+                }}
+              >
+                <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
+                <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
+              </TouchableOpacity>
           </View>
         )}
       </View>
@@ -171,8 +176,5 @@ logoImage: {
     alignItems: 'center',
     padding: 12,
     minWidth: 60,
-  },
-  buttonLabel: {
-    fontWeight: '500',
   },
 });
