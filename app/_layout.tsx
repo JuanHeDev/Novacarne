@@ -3,6 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { DespieceProvider } from '../contexts/DespieceContext';
+import { EntradasProvider } from '../contexts/EntradasContext';
+import { CanalProvider } from '../contexts/CanalContext';
 import { supabase } from '../lib/supabase';
 
 function AuthGuard() {
@@ -47,7 +50,13 @@ function RootLayoutContent() {
   return (
     <>
       <StatusBar style={colors.background === '#efe3ca' ? 'dark' : 'light'} />
-      <Slot />
+      <EntradasProvider>
+        <CanalProvider>
+          <DespieceProvider>
+            <Slot />
+          </DespieceProvider>
+        </CanalProvider>
+      </EntradasProvider>
       {!ready && (
         <View style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,

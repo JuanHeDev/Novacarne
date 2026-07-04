@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../lib/supabase';
 
 const proveedores = [
   { id: 1, nombre: 'Proveedor A' },
@@ -20,6 +21,13 @@ export default function LotesEntrada() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<string | null>(null);
   const [notas, setNotas] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email);
+    });
+  }, []);
 
   const numCanales = params.numCanales ? parseInt(params.numCanales) : 0;
   const pesoTotal = params.pesoTotal ? parseFloat(params.pesoTotal) : 0;
@@ -67,6 +75,11 @@ export default function LotesEntrada() {
 
           {showMenu && (
             <View style={[styles.menu, { backgroundColor: colors.card }]}>
+              <View style={styles.profileSection}>
+                <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
+                <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
+              </View>
+              <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => setShowMenu(false)}
@@ -319,5 +332,20 @@ const styles = StyleSheet.create({
   acceptButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 10,
+  },
+  profileEmail: {
+    fontSize: 14,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  menuDivider: {
+    height: 1,
+    marginHorizontal: 12,
   },
 });

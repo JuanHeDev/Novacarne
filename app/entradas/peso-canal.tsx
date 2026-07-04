@@ -1,15 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-
-interface PesoRegistro {
-  numCanal: number;
-  peso: number;
-  fecha: Date;
-}
+import { supabase } from '../../lib/supabase';
+import { useCanal, type PesoRegistro } from '../../contexts/CanalContext';
 
 type RegistrosMap = Record<number, number>;
 
@@ -17,13 +13,20 @@ export default function PesoCanal() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { isDark, toggleTheme, colors } = useTheme();
+  const { agregarRegistros } = useCanal();
   
   const [showMenu, setShowMenu] = useState(false);
   const [showFinalizarModal, setShowFinalizarModal] = useState(false);
   const [numCanal, setNumCanal] = useState(1);
   const [peso, setPeso] = useState('');
-  const [registros, setRegistros] = useState<PesoRegistro[]>([]);
   const [pesosMap, setPesosMap] = useState<RegistrosMap>({});
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email);
+    });
+  }, []);
 
   const isMobile = width < 768;
   const cardWidth = isMobile ? width * 0.9 : 400;
@@ -44,11 +47,11 @@ export default function PesoCanal() {
       peso: peso,
       fecha: new Date(),
     }));
-    setRegistros([...registros, ...nuevosRegistros]);
-    console.log('Registros guardados:', nuevosRegistros);
+    agregarRegistros(nuevosRegistros);
     
-    const numCanales = nuevosRegistros.length;
-    const pesoTotal = nuevosRegistros.reduce((sum, r) => sum + r.peso, 0);
+    const todosLosRegistros = nuevosRegistros;
+    const numCanales = todosLosRegistros.length;
+    const pesoTotal = todosLosRegistros.reduce((sum, r) => sum + r.peso, 0);
     
     setShowFinalizarModal(false);
     router.replace({ pathname: '/entradas/lotes-entrada', params: { numCanales: String(numCanales), pesoTotal: String(pesoTotal) } });
@@ -118,6 +121,11 @@ export default function PesoCanal() {
 
             {showMenu && (
               <View style={[styles.menu, { backgroundColor: colors.card }]}>
+                <View style={styles.profileSection}>
+                  <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
+                  <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
+                </View>
+                <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={() => setShowMenu(false)}
@@ -410,5 +418,20 @@ const modalStyles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 10,
+  },
+  profileEmail: {
+    fontSize: 14,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  menuDivider: {
+    height: 1,
+    marginHorizontal: 12,
   },
 });

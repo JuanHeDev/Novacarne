@@ -3,6 +3,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useEntradas } from '../../contexts/EntradasContext';
+import { useDespiece } from '../../contexts/DespieceContext';
+import { useCanal } from '../../contexts/CanalContext';
+import { supabase } from '../../lib/supabase';
 
 export default function Entradas() {
   const router = useRouter();
@@ -10,10 +14,20 @@ export default function Entradas() {
   const { width } = useWindowDimensions();
   const { isDark, toggleTheme, colors } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
-  const [nuevoLoteActivo, setNuevoLoteActivo] = useState(false);
-  const [canalCompletado, setCanalCompletado] = useState(false);
-  const [despieceHabilitado, setDespieceHabilitado] = useState(false);
-  const [despieceCompletado, setDespieceCompletado] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const { resetRegistros: resetDespieceRegistros } = useDespiece();
+  const { resetRegistros: resetCanalRegistros } = useCanal();
+  const {
+    nuevoLoteActivo, canalCompletado, despieceHabilitado, despieceCompletado, despieceConDatos,
+    setNuevoLoteActivo, setCanalCompletado, setDespieceHabilitado, setDespieceCompletado, setDespieceConDatos,
+    finalizarLote, reiniciar,
+  } = useEntradas();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email);
+    });
+  }, []);
 
   useEffect(() => {
     if (params.canal === 'true') {
@@ -21,8 +35,14 @@ export default function Entradas() {
       setDespieceHabilitado(true);
       setNuevoLoteActivo(false);
     }
+    if (params.despieceDatos === 'true') {
+      setDespieceConDatos(true);
+    } else if (params.despieceDatos === 'false') {
+      setDespieceConDatos(false);
+    }
     if (params.despiece === 'true') {
       setDespieceCompletado(true);
+      setDespieceConDatos(false);
     }
   }, [params]);
 
@@ -44,16 +64,13 @@ export default function Entradas() {
   };
 
   const handleFinalizarLote = () => {
-    setCanalCompletado(true);
-    setDespieceHabilitado(false);
-    setDespieceCompletado(false);
+    finalizarLote();
+    resetDespieceRegistros();
+    resetCanalRegistros();
   };
 
   const handleReiniciar = () => {
-    setNuevoLoteActivo(true);
-    setCanalCompletado(false);
-    setDespieceHabilitado(false);
-    setDespieceCompletado(false);
+    reiniciar();
   };
 
   return (
@@ -92,6 +109,11 @@ export default function Entradas() {
 
           {showMenu && (
             <View style={[styles.menu, { backgroundColor: colors.card }]}>
+              <View style={styles.profileSection}>
+                <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
+                <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
+              </View>
+              <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => setShowMenu(false)}
@@ -144,19 +166,15 @@ export default function Entradas() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[
-                styles.subButton, 
-                { borderColor: despieceHabilitado || despieceCompletado ? colors.accent : '#aaa' },
-                despieceCompletado && styles.subButtonCompletado
-              ]}
-              disabled={!despieceHabilitado && !despieceCompletado}
+              style={[styles.subButton, { borderColor: despieceHabilitado ? colors.accent : '#aaa' }]}
+              disabled={!despieceHabilitado}
               onPress={() => router.push('/entradas/despiece')}
             >
-              <MaterialCommunityIcons name="knife" size={24} color={despieceHabilitado || despieceCompletado ? colors.text : '#aaa'} />
-              <Text style={[styles.subButtonText, { color: despieceHabilitado || despieceCompletado ? colors.text : '#aaa' }]}>
+              <MaterialCommunityIcons name="knife" size={24} color={despieceHabilitado ? colors.text : '#aaa'} />
+              <Text style={[styles.subButtonText, { color: despieceHabilitado ? colors.text : '#aaa' }]}>
                 2. Despiece
               </Text>
-              {despieceCompletado && (
+              {despieceConDatos && (
                 <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" style={{ marginLeft: 8 }} />
               )}
             </TouchableOpacity>
@@ -165,13 +183,7 @@ export default function Entradas() {
           {canalCompletado && despieceCompletado && (
             <TouchableOpacity 
               style={[styles.finalizarButton, { backgroundColor: colors.accent }]}
-              onPress={() => {
-                setNuevoLoteActivo(false);
-                setCanalCompletado(false);
-                setDespieceHabilitado(false);
-                setDespieceCompletado(false);
-                router.replace('/');
-              }}
+              onPress={handleFinalizarLote}
             >
               <MaterialCommunityIcons name="check" size={20} color={isDark ? colors.background : colors.card} />
               <Text style={[styles.finalizarButtonText, { color: isDark ? colors.background : colors.card }]}>Finalizar lote</Text>
@@ -246,6 +258,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     marginBottom: 16,
+    borderRadius: 16,
   },
   contentColumn: {
     width: '100%',
@@ -282,9 +295,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
-  subButtonCompletado: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-  },
   subButtonText: {
     marginLeft: 12,
     fontSize: 14,
@@ -317,5 +327,20 @@ const styles = StyleSheet.create({
   consultButtonText: {
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 10,
+  },
+  profileEmail: {
+    fontSize: 14,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  menuDivider: {
+    height: 1,
+    marginHorizontal: 12,
   },
 });

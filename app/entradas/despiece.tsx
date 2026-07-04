@@ -1,9 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useDespiece, type CorteTara, type Registro } from '../../contexts/DespieceContext';
 import AlertModal from '../../components/AlertModal';
+import { supabase } from '../../lib/supabase';
 
 const categorias = [
   { id: 1, nombre: 'Cortes primarios', icono: 'food-steak' },
@@ -70,21 +72,6 @@ const opcionesTara = {
 
 const categoriasTara = Object.keys(opcionesTara);
 
-type CorteTara = {
-  nombre: string;
-  peso: number;
-  cantidad: number;
-};
-
-type Registro = {
-  id: string;
-  categoria: string;
-  corte: string;
-  peso: number;
-  tara?: CorteTara;
-  pesoReal: number;
-};
-
 function parsePeso(pesoStr: string): number {
   return parseFloat(pesoStr.replace('kg', '')) || 0;
 }
@@ -98,6 +85,13 @@ export default function Despiece() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email);
+    });
+  }, []);
 
   const [step, setStep] = useState<'categoria' | 'corte' | 'tara'>('categoria');
   const [categoria, setCategoria] = useState<string | null>(null);
@@ -111,7 +105,7 @@ export default function Despiece() {
   const [taraDropdown, setTaraDropdown] = useState(false);
   const [taraCategoriaDropdown, setTaraCategoriaDropdown] = useState(false);
 
-  const [registros, setRegistros] = useState<Registro[]>([]);
+  const { registros, agregarRegistro, actualizarRegistro, eliminarRegistro } = useDespiece();
   const [editId, setEditId] = useState<string | null>(null);
 
   const isMobile = width < 768;
@@ -196,9 +190,9 @@ export default function Despiece() {
     };
 
     if (editId) {
-      setRegistros(prev => prev.map(r => r.id === editId ? { ...registro, id: editId } : r));
+      actualizarRegistro(editId, registro);
     } else {
-      setRegistros(prev => [...prev, registro]);
+      agregarRegistro(registro);
     }
 
     resetForm();
@@ -242,7 +236,7 @@ export default function Despiece() {
   }
 
   function handleEliminar(id: string) {
-    setRegistros(prev => prev.filter(r => r.id !== id));
+    eliminarRegistro(id);
     if (editId === id) resetForm();
   }
 
@@ -298,7 +292,7 @@ export default function Despiece() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace({ pathname: '/entradas', params: { canal: 'true' } })} style={[styles.backButton, { backgroundColor: colors.accent, zIndex: 1 }]}>
+        <TouchableOpacity onPress={() => router.replace({ pathname: '/entradas', params: { canal: 'true', despieceDatos: registros.length > 0 ? 'true' : 'false' } })} style={[styles.backButton, { backgroundColor: colors.accent, zIndex: 1 }]}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -316,6 +310,11 @@ export default function Despiece() {
           </TouchableOpacity>
           {showMenu && (
             <View style={[styles.menu, { backgroundColor: colors.card }]}>
+              <View style={styles.profileSection}>
+                <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
+                <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
+              </View>
+              <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
               <TouchableOpacity style={styles.menuItem} onPress={() => setShowMenu(false)}>
                 <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
                 <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
@@ -606,4 +605,19 @@ const styles = StyleSheet.create({
   modalBtnCancel: { borderWidth: 1, borderColor: '#ddd' },
   modalBtnConfirm: {},
   modalBtnText: { fontSize: 15, fontWeight: '600' },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 10,
+  },
+  profileEmail: {
+    fontSize: 14,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  menuDivider: {
+    height: 1,
+    marginHorizontal: 12,
+  },
 });

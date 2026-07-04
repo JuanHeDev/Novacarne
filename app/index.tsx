@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
@@ -22,7 +22,14 @@ export default function Index() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const greeting = getGreeting();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email);
+    });
+  }, []);
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -63,6 +70,11 @@ export default function Index() {
 
         {showMenu && (
           <View style={[styles.menu, { backgroundColor: colors.card }]}>
+              <View style={styles.profileSection}>
+                <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
+                <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
+              </View>
+              <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={async () => {
@@ -144,6 +156,21 @@ const styles = StyleSheet.create({
     padding: 8,
     minWidth: 150,
     elevation: 4,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 10,
+  },
+  profileEmail: {
+    fontSize: 14,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  menuDivider: {
+    height: 1,
+    marginHorizontal: 12,
   },
   menuItem: {
     flexDirection: 'row',
