@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useDespiece, type CorteTara, type Registro } from '../../contexts/DespieceContext';
+import Header from '../../components/Header';
 import AlertModal from '../../components/AlertModal';
-import { supabase } from '../../lib/supabase';
 
 const categorias = [
   { id: 1, nombre: 'Cortes primarios', icono: 'food-steak' },
@@ -70,7 +70,7 @@ const opcionesTara = {
   ],
 };
 
-const categoriasTara = Object.keys(opcionesTara);
+const categoriasTara = Object.keys(opcionesTara) as Array<keyof typeof opcionesTara>;
 
 function parsePeso(pesoStr: string): number {
   return parseFloat(pesoStr.replace('kg', '')) || 0;
@@ -79,19 +79,11 @@ function parsePeso(pesoStr: string): number {
 export default function Despiece() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { isDark, toggleTheme, colors } = useTheme();
-  const [showMenu, setShowMenu] = useState(false);
+  const { isDark, colors } = useTheme();
   const [showFinalizarModal, setShowFinalizarModal] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
 
   const [step, setStep] = useState<'categoria' | 'corte' | 'tara'>('categoria');
   const [categoria, setCategoria] = useState<string | null>(null);
@@ -291,35 +283,7 @@ export default function Despiece() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace({ pathname: '/entradas', params: { canal: 'true', despieceDatos: registros.length > 0 ? 'true' : 'false' } })} style={[styles.backButton, { backgroundColor: colors.accent, zIndex: 1 }]}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
-            <MaterialCommunityIcons name="home" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={toggleTheme}>
-            <MaterialCommunityIcons name={isDark ? 'weather-night' : 'white-balance-sunny'} size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => setShowMenu(!showMenu)}>
-            <MaterialCommunityIcons name="account" size={24} color="#fff" />
-          </TouchableOpacity>
-          {showMenu && (
-            <View style={[styles.menu, { backgroundColor: colors.card }]}>
-              <View style={styles.profileSection}>
-                <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
-                <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
-              </View>
-              <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
-              <TouchableOpacity style={styles.menuItem} onPress={() => setShowMenu(false)}>
-                <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
-                <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
+      <Header showBack onBackPress={() => router.replace({ pathname: '/entradas', params: { canal: 'true', despieceDatos: registros.length > 0 ? 'true' : 'false' } })} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.pageTitle, { color: colors.text, fontSize: titleSize }]}>Despiece</Text>
@@ -522,19 +486,7 @@ export default function Despiece() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingTop: 50, paddingHorizontal: 16, paddingBottom: 12,
-  },
-  backButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  headerCenter: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 0 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12, marginLeft: 'auto' },
-  headerTitle: { fontSize: 28, fontWeight: 'bold' },
   pageTitle: { fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
-  iconButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  menu: { position: 'absolute', top: 50, right: 0, borderRadius: 8, padding: 8, minWidth: 150, elevation: 4, zIndex: 100 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  menuItemText: { marginLeft: 8, fontSize: 14 },
   scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 40, paddingHorizontal: 16, paddingTop: 24 },
   mainCard: { borderRadius: 20, padding: 24, marginBottom: 16,elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
@@ -604,19 +556,4 @@ const styles = StyleSheet.create({
   modalBtnCancel: { borderWidth: 1, borderColor: '#ddd' },
   modalBtnConfirm: {},
   modalBtnText: { fontSize: 15, fontWeight: '600' },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    gap: 10,
-  },
-  profileEmail: {
-    fontSize: 14,
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-  menuDivider: {
-    height: 1,
-    marginHorizontal: 12,
-  },
 });

@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { supabase } from '../../lib/supabase';
+import Header from '../../components/Header';
 
 const proveedores = [
   { id: 1, nombre: 'Proveedor A' },
@@ -16,21 +16,13 @@ export default function LotesEntrada() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
-  const { isDark, toggleTheme, colors } = useTheme();
-  const [showMenu, setShowMenu] = useState(false);
+  const { isDark, colors } = useTheme();
   const [showDropdown, setShowDropdown] = useState(false);
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<string | null>(null);
   const [notas, setNotas] = useState('');
-  const [userEmail, setUserEmail] = useState('');
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
-
-  const numCanales = params.numCanales ? parseInt(params.numCanales) : 0;
-  const pesoTotal = params.pesoTotal ? parseFloat(params.pesoTotal) : 0;
+  const numCanales = params.numCanales ? parseInt(Array.isArray(params.numCanales) ? params.numCanales[0] : params.numCanales) : 0;
+  const pesoTotal = params.pesoTotal ? parseFloat(Array.isArray(params.pesoTotal) ? params.pesoTotal[0] : params.pesoTotal) : 0;
   
   const mostrarNumCanales = numCanales > 0 ? numCanales : '--';
   const mostrarPesoTotal = pesoTotal > 0 ? pesoTotal.toFixed(2) : '--';
@@ -43,54 +35,7 @@ export default function LotesEntrada() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={[styles.backButton, { backgroundColor: colors.accent }]}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
-            <MaterialCommunityIcons name="home" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: colors.accent }]}
-            onPress={toggleTheme}
-          >
-            <MaterialCommunityIcons
-              name={isDark ? 'weather-night' : 'white-balance-sunny'}
-              size={24}
-              color="#fff"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: colors.accent }]}
-            onPress={() => setShowMenu(!showMenu)}
-          >
-            <MaterialCommunityIcons name="account" size={24} color="#fff" />
-          </TouchableOpacity>
-
-          {showMenu && (
-            <View style={[styles.menu, { backgroundColor: colors.card }]}>
-              <View style={styles.profileSection}>
-                <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
-                <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
-              </View>
-              <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => setShowMenu(false)}
-              >
-                <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
-                <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
+      <Header showBack />
 
       <View style={styles.centerWrapper}>
       <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth }]}>
@@ -187,51 +132,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menu: {
-    position: 'absolute',
-    top: 50,
-    right: 0,
-    borderRadius: 8,
-    padding: 8,
-    minWidth: 150,
-    elevation: 4,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  menuItemText: {
-    marginLeft: 8,
-    fontSize: 14,
   },
   card: {
     borderRadius: 20,
@@ -339,20 +239,5 @@ const styles = StyleSheet.create({
   acceptButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    gap: 10,
-  },
-  profileEmail: {
-    fontSize: 14,
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-  menuDivider: {
-    height: 1,
-    marginHorizontal: 12,
   },
 });

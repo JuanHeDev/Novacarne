@@ -1,11 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-import { supabase } from '../lib/supabase';
-import AlertModal from '../components/AlertModal';
+import Header from '../components/Header';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -17,19 +15,8 @@ function getGreeting() {
 export default function Index() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { isDark, setIsDark, toggleTheme, colors } = useTheme();
-  const [showMenu, setShowMenu] = useState(false);
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertTitle, setAlertTitle] = useState('');
-  const [alertMessage, setAlertMessage] = useState('');
-  const [userEmail, setUserEmail] = useState('');
+  const { isDark, colors } = useTheme();
   const greeting = getGreeting();
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -46,49 +33,7 @@ export default function Index() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
-      <View style={styles.headerButtons}>
-        <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
-          <MaterialCommunityIcons name="home" size={24} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.iconButton, { backgroundColor: colors.accent }]}
-          onPress={toggleTheme}
-        >
-          <MaterialCommunityIcons
-            name={isDark ? 'weather-night' : 'white-balance-sunny'}
-            size={24}
-            color="#fff"
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.iconButton, { backgroundColor: colors.accent }]}
-          onPress={() => setShowMenu(!showMenu)}
-        >
-          <MaterialCommunityIcons name="account" size={24} color="#fff" />
-        </TouchableOpacity>
-
-        {showMenu && (
-          <View style={[styles.menu, { backgroundColor: colors.card }]}>
-              <View style={styles.profileSection}>
-                <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
-                <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
-              </View>
-              <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={async () => {
-                  setShowMenu(false);
-                   const { error } = await supabase.auth.signOut();
-                  if (error) { setAlertTitle('Error'); setAlertMessage(error.message); setAlertVisible(true); }
-                }}
-              >
-                <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
-                <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
-              </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      <Header />
 
       <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
         <Image
@@ -119,8 +64,6 @@ export default function Index() {
           </TouchableOpacity>
         </View>
       </View>
-
-      <AlertModal visible={alertVisible} title={alertTitle} message={alertMessage} onClose={() => setAlertVisible(false)} />
     </View>
   );
 }
@@ -132,55 +75,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
-  headerButtons: {
-    position: 'absolute',
-    top: 50,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    zIndex: 10,
-  },
-  iconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menu: {
-    position: 'absolute',
-    top: 50,
-    right: 0,
-    borderRadius: 8,
-    padding: 8,
-    minWidth: 150,
-    elevation: 4,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    gap: 10,
-  },
-  profileEmail: {
-    fontSize: 14,
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-  menuDivider: {
-    height: 1,
-    marginHorizontal: 12,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  menuItemText: {
-    marginLeft: 8,
-    fontSize: 14,
-  },
+
   card: {
     borderRadius: 24,
     alignItems: 'center',

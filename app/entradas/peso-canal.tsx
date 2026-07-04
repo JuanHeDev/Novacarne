@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { supabase } from '../../lib/supabase';
+import Header from '../../components/Header';
 import { useCanal, type PesoRegistro } from '../../contexts/CanalContext';
 
 type RegistrosMap = Record<number, number>;
@@ -12,21 +12,13 @@ type RegistrosMap = Record<number, number>;
 export default function PesoCanal() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { isDark, toggleTheme, colors } = useTheme();
+  const { isDark, colors } = useTheme();
   const { agregarRegistros } = useCanal();
   
-  const [showMenu, setShowMenu] = useState(false);
   const [showFinalizarModal, setShowFinalizarModal] = useState(false);
   const [numCanal, setNumCanal] = useState(1);
   const [peso, setPeso] = useState('');
   const [pesosMap, setPesosMap] = useState<RegistrosMap>({});
-  const [userEmail, setUserEmail] = useState('');
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
 
   const isMobile = width < 768;
   const cardWidth = isMobile ? width * 0.9 : 400;
@@ -87,56 +79,7 @@ export default function PesoCanal() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
         
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              onPress={() => router.back()} 
-              style={[styles.iconButton, { backgroundColor: colors.accent }]}
-            >
-              <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
-            <MaterialCommunityIcons name="home" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-              style={[styles.iconButton, { backgroundColor: colors.accent }]}
-              onPress={toggleTheme}
-            >
-              <MaterialCommunityIcons
-                name={isDark ? 'weather-night' : 'white-balance-sunny'}
-                size={24}
-                color="#fff"
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.iconButton, { backgroundColor: colors.accent }]}
-              onPress={() => setShowMenu(!showMenu)}
-            >
-              <MaterialCommunityIcons name="account" size={24} color="#fff" />
-            </TouchableOpacity>
-
-            {showMenu && (
-              <View style={[styles.menu, { backgroundColor: colors.card }]}>
-                <View style={styles.profileSection}>
-                  <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
-                  <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
-                </View>
-                <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => setShowMenu(false)}
-                >
-                  <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>
+        <Header showBack />
 
         <View style={styles.centerWrapper}>
           <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth }]}>
@@ -249,47 +192,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menu: {
-    position: 'absolute',
-    top: 50,
-    right: 0,
-    borderRadius: 8,
-    padding: 8,
-    minWidth: 150,
-    elevation: 4,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  menuItemText: {
-    marginLeft: 8,
-    fontSize: 14,
   },
   card: {
     borderRadius: 20,
@@ -425,20 +327,5 @@ const modalStyles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    gap: 10,
-  },
-  profileEmail: {
-    fontSize: 14,
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-  menuDivider: {
-    height: 1,
-    marginHorizontal: 12,
   },
 });
