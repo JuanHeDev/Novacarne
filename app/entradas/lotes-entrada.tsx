@@ -92,6 +92,7 @@ export default function LotesEntrada() {
         </View>
       </View>
 
+      <View style={styles.centerWrapper}>
       <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth }]}>
         <Text style={[styles.title, { color: colors.text }]}>Lote Entrada</Text>
 
@@ -173,6 +174,7 @@ export default function LotesEntrada() {
           <Text style={[styles.acceptButtonText, { color: '#fff' }]}>Aceptar</Text>
         </TouchableOpacity>
       </View>
+      </View>
     </View>
   );
 }
@@ -180,6 +182,11 @@ export default function LotesEntrada() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

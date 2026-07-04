@@ -126,6 +126,7 @@ export default function Entradas() {
         </View>
       </View>
 
+      <View style={styles.centerWrapper}>
       <View style={[styles.mainCard, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
         <Image
             source={require('../../assets/images/cuchillo.png')}
@@ -191,6 +192,7 @@ export default function Entradas() {
           )}
         </View>
       </View>
+      </View>
     </View>
   );
 }
@@ -198,6 +200,11 @@ export default function Entradas() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

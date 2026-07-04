@@ -35,12 +35,12 @@ export default function Index() {
   const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 
-  const cardWidth = isWeb ? 700 : isTablet ? 450 : width * 0.85;
-  const cardPadding = isWeb ? 48 : isTablet ? 32 : 24;
-  const logoSize = isWeb ? 160 : isTablet ? 100 : 90;
-  const fontSize = isWeb ? 32 : isTablet ? 24 : 20;
-  const buttonIconSize = isWeb ? 40 : isTablet ? 32 : 28;
-  const buttonSize = isWeb ? 70 : isTablet ? 60 : 50;
+  const cardWidth = isWeb ? 700 : isTablet ? 500 : width * 0.92;
+  const cardPadding = isWeb ? 48 : isTablet ? 36 : 32;
+  const logoSize = isWeb ? 180 : isTablet ? 130 : 120;
+  const fontSize = isWeb ? 36 : isTablet ? 28 : 24;
+  const buttonIconSize = isWeb ? 48 : isTablet ? 40 : 36;
+  const buttonSize = isWeb ? 80 : isTablet ? 72 : 64;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -105,17 +105,17 @@ export default function Index() {
             onPress={() => router.push('/entradas')}
           >
             <MaterialCommunityIcons name="arrow-up-box" size={buttonIconSize} color={colors.text} />
-            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 14 : 12 }]}>Entradas</Text>
+            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 16 : 14 }]}>Entradas</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.button}>
             <MaterialCommunityIcons name="cash-register" size={buttonIconSize} color={colors.text} />
-            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 14 : 12 }]}>Caja</Text>
+            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 16 : 14 }]}>Caja</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.button}>
             <MaterialCommunityIcons name="chart-bar" size={buttonIconSize} color={colors.text} />
-            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 14 : 12 }]}>Análisis</Text>
+            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 16 : 14 }]}>Análisis</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -142,9 +142,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -182,9 +182,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 24,
     alignItems: 'center',
-    maxWidth: 500,
+    maxWidth: 600,
     padding: 24,
   },
 logoImage: {
@@ -193,7 +193,7 @@ logoImage: {
   },
   greeting: {
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   buttonLabel: {
     fontWeight: '500',
@@ -203,11 +203,11 @@ logoImage: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    gap: 16,
+    gap: 24,
   },
   button: {
     alignItems: 'center',
-    padding: 12,
-    minWidth: 60,
+    padding: 16,
+    minWidth: 80,
   },
 });

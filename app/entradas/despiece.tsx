@@ -295,9 +295,6 @@ export default function Despiece() {
         <TouchableOpacity onPress={() => router.replace({ pathname: '/entradas', params: { canal: 'true', despieceDatos: registros.length > 0 ? 'true' : 'false' } })} style={[styles.backButton, { backgroundColor: colors.accent, zIndex: 1 }]}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text, fontSize: titleSize }]}>Despiece</Text>
-        </View>
         <View style={styles.headerRight}>
           <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.accent }]} onPress={() => router.replace('/')}>
             <MaterialCommunityIcons name="home" size={24} color="#fff" />
@@ -325,6 +322,7 @@ export default function Despiece() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <Text style={[styles.pageTitle, { color: colors.text, fontSize: titleSize }]}>Despiece</Text>
         <View style={[styles.mainCard, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
           <View style={styles.pasosRow}>
             {renderPasoNumero(1, 'Categoría', step === 'categoria')}
@@ -532,12 +530,13 @@ const styles = StyleSheet.create({
   headerCenter: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 0 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12, marginLeft: 'auto' },
   headerTitle: { fontSize: 28, fontWeight: 'bold' },
+  pageTitle: { fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
   iconButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   menu: { position: 'absolute', top: 50, right: 0, borderRadius: 8, padding: 8, minWidth: 150, elevation: 4, zIndex: 100 },
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: 12 },
   menuItemText: { marginLeft: 8, fontSize: 14 },
   scrollView: { flex: 1 },
-  scrollContent: { alignItems: 'center', paddingBottom: 40, paddingHorizontal: 16 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 40, paddingHorizontal: 16, paddingTop: 24 },
   mainCard: { borderRadius: 20, padding: 24, marginBottom: 16,elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
   pasosRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   paso: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2 },

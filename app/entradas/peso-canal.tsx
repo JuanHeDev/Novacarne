@@ -138,7 +138,8 @@ export default function PesoCanal() {
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth }]}>
+        <View style={styles.centerWrapper}>
+          <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth }]}>
           <View style={styles.iconSection}>
             <Text style={[styles.title, { color: colors.text }]}>Peso/Canal</Text>
             <Image
@@ -210,6 +211,7 @@ export default function PesoCanal() {
           </TouchableOpacity>
         </View>
       </View>
+      </View>
 
       <Modal visible={showFinalizarModal} transparent animationType="fade">
         <View style={modalStyles.overlay}>
@@ -242,6 +244,11 @@ export default function PesoCanal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -289,7 +296,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     alignSelf: 'center',
-    marginTop: 20,
+    marginTop: 40,
   },
   iconSection: {
     marginBottom: 16,
