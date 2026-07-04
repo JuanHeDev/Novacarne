@@ -2,9 +2,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
+import AlertModal from '../components/AlertModal';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -18,6 +19,9 @@ export default function Index() {
   const { width } = useWindowDimensions();
   const { isDark, setIsDark, toggleTheme, colors } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
   const greeting = getGreeting();
 
   const isMobile = width < 768;
@@ -63,8 +67,8 @@ export default function Index() {
                 style={styles.menuItem}
                 onPress={async () => {
                   setShowMenu(false);
-                  const { error } = await supabase.auth.signOut();
-                  if (error) Alert.alert('Error', error.message);
+                   const { error } = await supabase.auth.signOut();
+                  if (error) { setAlertTitle('Error'); setAlertMessage(error.message); setAlertVisible(true); }
                 }}
               >
                 <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
@@ -103,6 +107,8 @@ export default function Index() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <AlertModal visible={alertVisible} title={alertTitle} message={alertMessage} onClose={() => setAlertVisible(false)} />
     </View>
   );
 }

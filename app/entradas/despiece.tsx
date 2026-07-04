@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import AlertModal from '../../components/AlertModal';
 
 const categorias = [
   { id: 1, nombre: 'Cortes primarios', icono: 'food-steak' },
@@ -94,6 +95,9 @@ export default function Despiece() {
   const { isDark, toggleTheme, colors } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const [showFinalizarModal, setShowFinalizarModal] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
 
   const [step, setStep] = useState<'categoria' | 'corte' | 'tara'>('categoria');
   const [categoria, setCategoria] = useState<string | null>(null);
@@ -154,7 +158,7 @@ export default function Despiece() {
 
   function handleSiguientePeso() {
     if (!corte || !peso || parseFloat(peso) <= 0) {
-      Alert.alert('Error', 'Ingresa un peso válido');
+      setAlertTitle('Error'); setAlertMessage('Ingresa un peso válido'); setAlertVisible(true);
       return;
     }
     setAplicaTara(null);
@@ -202,7 +206,7 @@ export default function Despiece() {
 
   function handleAplicarTara() {
     if (!taraItem || !taraCantidad || parseFloat(taraCantidad) <= 0) {
-      Alert.alert('Error', 'Selecciona un elemento de tara y captura la cantidad');
+      setAlertTitle('Error'); setAlertMessage('Selecciona un elemento de tara y captura la cantidad'); setAlertVisible(true);
       return;
     }
     guardarRegistro();
@@ -248,7 +252,7 @@ export default function Despiece() {
 
   function confirmarFinalizar() {
     setShowFinalizarModal(false);
-    Alert.alert('Enviado', 'Despiece enviado correctamente');
+    setAlertTitle('Enviado'); setAlertMessage('Despiece enviado correctamente'); setAlertVisible(true);
     router.replace({ pathname: '/entradas', params: { despiece: 'true' } });
   }
 
@@ -513,6 +517,8 @@ export default function Despiece() {
           </View>
         </View>
       )}
+
+      <AlertModal visible={alertVisible} title={alertTitle} message={alertMessage} onClose={() => setAlertVisible(false)} />
     </View>
   );
 }

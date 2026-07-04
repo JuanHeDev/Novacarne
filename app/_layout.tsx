@@ -8,7 +8,6 @@ import { supabase } from '../lib/supabase';
 function AuthGuard() {
   const router = useRouter();
   const segments = useSegments();
-  const { colors } = useTheme();
   const [session, setSession] = useState<object | null | undefined>(undefined);
 
   useEffect(() => {
@@ -34,25 +33,31 @@ function AuthGuard() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (session === undefined) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
-  }
-
   return null;
 }
 
 function RootLayoutContent() {
   const { colors } = useTheme();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(() => setReady(true));
+  }, []);
 
   return (
     <>
       <StatusBar style={colors.background === '#efe3ca' ? 'dark' : 'light'} />
-      <AuthGuard />
       <Slot />
+      {!ready && (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: colors.background,
+          justifyContent: 'center', alignItems: 'center',
+        }}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      )}
+      <AuthGuard />
     </>
   );
 }

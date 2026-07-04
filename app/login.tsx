@@ -2,9 +2,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
+import AlertModal from '../components/AlertModal';
 
 export default function Login() {
   const router = useRouter();
@@ -14,6 +15,9 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -23,9 +27,15 @@ export default function Login() {
   const cardPadding = isWeb ? 32 : isTablet ? 28 : 24;
   const logoSize = isWeb ? 130 : isTablet ? 110 : 90;
 
+  function showAlert(title: string, message: string) {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertVisible(true);
+  }
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Campos vacíos', 'Por favor ingresa correo y contraseña');
+      showAlert('Campos vacíos', 'Por favor ingresa correo y contraseña');
       return;
     }
     setLoading(true);
@@ -34,7 +44,7 @@ export default function Login() {
       password,
     });
     if (error) {
-      Alert.alert('Error', error.message);
+      showAlert('Error', 'Correo o contraseña incorrectos');
       setLoading(false);
       return;
     }
@@ -114,6 +124,8 @@ export default function Login() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <AlertModal visible={alertVisible} title={alertTitle} message={alertMessage} onClose={() => setAlertVisible(false)} />
     </View>
   );
 }
