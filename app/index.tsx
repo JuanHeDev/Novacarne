@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import Header from '../components/Header';
 
@@ -22,12 +22,12 @@ export default function Index() {
   const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 
-  const cardWidth = isWeb ? 700 : isTablet ? 500 : width * 0.92;
-  const cardPadding = isWeb ? 48 : isTablet ? 36 : 32;
-  const logoSize = isWeb ? 180 : isTablet ? 130 : 120;
-  const fontSize = isWeb ? 36 : isTablet ? 28 : 24;
-  const buttonIconSize = isWeb ? 48 : isTablet ? 40 : 36;
-  const buttonSize = isWeb ? 80 : isTablet ? 72 : 64;
+  const cardWidth = isWeb ? 560 : isTablet ? 480 : width * 0.92;
+  const cardPadding = isWeb ? 40 : isTablet ? 32 : 28;
+  const logoSize = isWeb ? 150 : isTablet ? 120 : 110;
+  const fontSize = isWeb ? 30 : isTablet ? 26 : 22;
+  const buttonIconSize = isWeb ? 42 : isTablet ? 36 : 32;
+  const buttonSize = isWeb ? 72 : isTablet ? 64 : 60;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -35,35 +35,45 @@ export default function Index() {
       
       <Header />
 
-      <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
-        <Image
-          source={require('../assets/images/NOVACARNE.png')}
-          style={[styles.logoImage, { width: logoSize, height: logoSize, borderRadius: logoSize * 0.22 }]}
-          contentFit="contain"
-        />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
+          <Image
+            source={require('../assets/images/NOVACARNE.png')}
+            style={[styles.logoImage, { width: logoSize, height: logoSize, borderRadius: logoSize * 0.22 }]}
+            contentFit="contain"
+          />
 
-        <Text style={[styles.greeting, { color: colors.text, fontSize }]}>{greeting}</Text>
+          <Text style={[styles.greeting, { color: colors.text, fontSize }]}>{greeting}</Text>
 
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => router.push('/entradas')}
-          >
-            <MaterialCommunityIcons name="arrow-up-box" size={buttonIconSize} color={colors.text} />
-            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 16 : 14 }]}>Entradas</Text>
-          </TouchableOpacity>
+          <View style={[styles.section, { borderColor: colors.accent, backgroundColor: colors.accent + '0D' }]}>
+            <Text style={[styles.sectionTitle, { color: colors.accent }]}>Operativo</Text>
+            <View style={styles.buttonsRow}>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/entradas')}>
+                <MaterialCommunityIcons name="arrow-up-box" size={buttonIconSize} color={colors.text} />
+                <Text style={[styles.buttonLabel, { color: colors.text }]}>Entradas</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button}>
+                <MaterialCommunityIcons name="cash-register" size={buttonIconSize} color={colors.text} />
+                <Text style={[styles.buttonLabel, { color: colors.text }]}>Caja</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
-          <TouchableOpacity style={styles.button}>
-            <MaterialCommunityIcons name="cash-register" size={buttonIconSize} color={colors.text} />
-            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 16 : 14 }]}>Caja</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.button}>
-            <MaterialCommunityIcons name="chart-bar" size={buttonIconSize} color={colors.text} />
-            <Text style={[styles.buttonLabel, { color: colors.text, fontSize: isWeb ? 16 : 14 }]}>Análisis</Text>
-          </TouchableOpacity>
+          <View style={[styles.section, { borderColor: colors.accent, backgroundColor: colors.accent + '0D' }]}>
+            <Text style={[styles.sectionTitle, { color: colors.accent }]}>Administración</Text>
+            <View style={styles.buttonsRow}>
+              <TouchableOpacity style={styles.button}>
+                <MaterialCommunityIcons name="chart-bar" size={buttonIconSize} color={colors.text} />
+                <Text style={[styles.buttonLabel, { color: colors.text }]}>Análisis</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/registros')}>
+                <MaterialCommunityIcons name="clipboard-list" size={buttonIconSize} color={colors.text} />
+                <Text style={[styles.buttonLabel, { color: colors.text }]}>Registros</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -71,9 +81,14 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
+    paddingVertical: 24,
   },
 
   card: {
@@ -81,6 +96,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     maxWidth: 600,
     padding: 24,
+    gap: 24,
   },
 logoImage: {
     borderWidth: 3,
@@ -88,21 +104,36 @@ logoImage: {
   },
   greeting: {
     fontWeight: '600',
-    marginBottom: 24,
+  },
+  section: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 2,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   buttonLabel: {
     fontWeight: '500',
-    fontSize: 12,
+    fontSize: 13,
   },
   buttonsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     width: '100%',
-    gap: 24,
+    gap: 32,
   },
   button: {
     alignItems: 'center',
-    padding: 16,
-    minWidth: 80,
+    padding: 12,
+    minWidth: 70,
+    gap: 6,
   },
 });
