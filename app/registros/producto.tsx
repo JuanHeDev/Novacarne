@@ -1,35 +1,47 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Modal, ScrollView, StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import Header from '../../components/Header';
 import AlertModal from '../../components/AlertModal';
+import Header from '../../components/Header';
+import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../lib/supabase';
 
 const categorias = ['Carnes', 'Embutidos', 'Limpieza', 'Empaque', 'Otros'];
 const unidades = ['kg', 'pzas'];
+
+/* Genera código de barras Code128 numérico de 14 dígitos */
+function generarCode128(): string {
+  const prefijo = '28';
+  const timestamp = Date.now().toString().slice(-8);
+  const aleatorio = Math.floor(Math.random() * 1000).toString().padStart(4, '0');
+  const base = prefijo + timestamp + aleatorio; // 2 + 8 + 4 = 14
+  const checksum = base.split('').reduce((s, c, i) => s + parseInt(c, 10) * (i + 1), 0) % 103;
+  return base + checksum.toString().padStart(2, '0');
+}
 
 interface Producto {
   id: string;
   nombre: string;
   categoria: string;
-  unidad: string;
-  insumo: boolean;
+  unidad_medida: string;
+  es_insumo: boolean;
+  precio_venta: number;
 }
 
 /* DATOS DE PRUEBA */
 const datosPrueba: Producto[] = [
-  { id: 'p1', nombre: 'Lomo de cerdo', categoria: 'Carnes', unidad: 'kg', insumo: false },
-  { id: 'p2', nombre: 'Pierna', categoria: 'Carnes', unidad: 'kg', insumo: false },
-  { id: 'p3', nombre: 'Costilla', categoria: 'Carnes', unidad: 'kg', insumo: false },
-  { id: 'p4', nombre: 'Chorizo', categoria: 'Embutidos', unidad: 'kg', insumo: false },
-  { id: 'p5', nombre: 'Longaniza', categoria: 'Embutidos', unidad: 'kg', insumo: false },
-  { id: 'p6', nombre: 'Jamón', categoria: 'Embutidos', unidad: 'pzas', insumo: false },
-  { id: 'p7', nombre: 'Detergente industrial', categoria: 'Limpieza', unidad: 'kg', insumo: true },
-  { id: 'p8', nombre: 'Cloro', categoria: 'Limpieza', unidad: 'pzas', insumo: true },
-  { id: 'p9', nombre: 'Bolsa selladora', categoria: 'Empaque', unidad: 'pzas', insumo: true },
-  { id: 'p10', nombre: 'Caja de cartón', categoria: 'Empaque', unidad: 'pzas', insumo: true },
-  { id: 'p11', nombre: 'Sal', categoria: 'Otros', unidad: 'kg', insumo: true },
-  { id: 'p12', nombre: 'Especias', categoria: 'Otros', unidad: 'kg', insumo: true },
+  { id: 'p1', nombre: 'Lomo de cerdo', categoria: 'Carnes', unidad_medida: 'kg', es_insumo: false, precio_venta: 0 },
+  { id: 'p2', nombre: 'Pierna', categoria: 'Carnes', unidad_medida: 'kg', es_insumo: false, precio_venta: 0 },
+  { id: 'p3', nombre: 'Costilla', categoria: 'Carnes', unidad_medida: 'kg', es_insumo: false, precio_venta: 0 },
+  { id: 'p4', nombre: 'Chorizo', categoria: 'Embutidos', unidad_medida: 'kg', es_insumo: false, precio_venta: 0 },
+  { id: 'p5', nombre: 'Longaniza', categoria: 'Embutidos', unidad_medida: 'kg', es_insumo: false, precio_venta: 0 },
+  { id: 'p6', nombre: 'Jamón', categoria: 'Embutidos', unidad_medida: 'pzas', es_insumo: false, precio_venta: 0 },
+  { id: 'p7', nombre: 'Detergente industrial', categoria: 'Limpieza', unidad_medida: 'kg', es_insumo: true, precio_venta: 0 },
+  { id: 'p8', nombre: 'Cloro', categoria: 'Limpieza', unidad_medida: 'pzas', es_insumo: true, precio_venta: 0 },
+  { id: 'p9', nombre: 'Bolsa selladora', categoria: 'Empaque', unidad_medida: 'pzas', es_insumo: true, precio_venta: 0 },
+  { id: 'p10', nombre: 'Caja de cartón', categoria: 'Empaque', unidad_medida: 'pzas', es_insumo: true, precio_venta: 0 },
+  { id: 'p11', nombre: 'Sal', categoria: 'Otros', unidad_medida: 'kg', es_insumo: true, precio_venta: 0 },
+  { id: 'p12', nombre: 'Especias', categoria: 'Otros', unidad_medida: 'kg', es_insumo: true, precio_venta: 0 },
 ];
 
 export default function ProductoScreen() {
@@ -68,36 +80,44 @@ export default function ProductoScreen() {
     ? productos.filter(p => p.categoria === filtroCategoria)
     : productos;
 
-  const handleRegistrar = () => {
+  const handleRegistrar = async () => {
     if (!nombre.trim() || !categoria || !unidad) {
       setAlertTitle('Campos incompletos');
-      setAlertMessage('Todos los campos excepto insumo son obligatorios.');
+      setAlertMessage('Todos los campos son obligatorios.');
       setAlertVisible(true);
       return;
     }
 
-    /*
-     * CONEXIÓN SUPABASE — Registrar producto
-     * 1. Crear una tabla `productos` en Supabase con:
-     *    - id UUID PRIMARY KEY DEFAULT gen_random_uuid()
-     *    - nombre TEXT NOT NULL
-     *    - categoria TEXT NOT NULL
-     *    - unidad TEXT NOT NULL
-     *    - insumo BOOLEAN DEFAULT false
-     *    - created_at TIMESTAMPTZ DEFAULT now()
-     *
-     * 2. Reemplazar el mock de abajo con:
-     *    const { error } = await supabase
-     *      .from('productos')
-     *      .insert({ nombre: nombre.trim(), categoria, unidad, insumo });
-     */
-
-    const nuevo: Producto = {
-      id: Date.now().toString(),
+    const payload = {
+      codigo_barras: generarCode128(),
       nombre: nombre.trim(),
       categoria,
-      unidad,
-      insumo,
+      unidad_medida: unidad,
+      precio_venta: 0,
+      es_insumo: insumo,
+    };
+
+    const { data, error } = await supabase
+      .from('productos')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('INSERT error:', JSON.stringify(error, null, 2));
+      setAlertTitle('Error al registrar');
+      setAlertMessage(`${error.message}${error.hint ? '\n\n' + error.hint : ''}${error.details ? '\n\n' + error.details : ''}`);
+      setAlertVisible(true);
+      return;
+    }
+
+    const nuevo: Producto = {
+      id: data.id,
+      nombre: data.nombre,
+      categoria: data.categoria,
+      unidad_medida: data.unidad_medida,
+      es_insumo: data.es_insumo,
+      precio_venta: Number(data.precio_venta),
     };
     setProductos([...productos, nuevo]);
     setNombre('');
