@@ -86,7 +86,7 @@ export default function PesoCanal() {
           <View style={styles.iconSection}>
             <Text style={[styles.title, { color: colors.text }]}>Peso/Canal</Text>
             <Image
-              source={require('../../assets/images/canal.png')}
+              source={require('../../assets/images/entradas/canal.png')}
               style={styles.iconImage}
               contentFit="contain"
             />

@@ -68,7 +68,7 @@ export default function Login() {
 
       <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
         <Image
-          source={require('../assets/images/NOVACARNE.png')}
+          source={require('../assets/images/logo/NOVACARNE.png')}
           style={[styles.logo, { width: logoSize, height: logoSize, borderRadius: logoSize * 0.22 }]}
           contentFit="contain"
         />

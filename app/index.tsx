@@ -38,7 +38,7 @@ export default function Index() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
           <Image
-            source={require('../assets/images/NOVACARNE.png')}
+            source={require('../assets/images/logo/NOVACARNE.png')}
             style={[styles.logoImage, { width: logoSize, height: logoSize, borderRadius: logoSize * 0.22 }]}
             contentFit="contain"
           />
@@ -69,6 +69,10 @@ export default function Index() {
               <TouchableOpacity style={styles.button} onPress={() => router.push('/registros')}>
                 <MaterialCommunityIcons name="clipboard-list" size={buttonIconSize} color={colors.text} />
                 <Text style={[styles.buttonLabel, { color: colors.text }]}>Registros</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/consultas')}>
+                <MaterialCommunityIcons name="magnify" size={buttonIconSize} color={colors.text} />
+                <Text style={[styles.buttonLabel, { color: colors.text }]}>Consultas</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -126,9 +130,10 @@ logoImage: {
   },
   buttonsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     width: '100%',
-    gap: 32,
+    gap: 20,
   },
   button: {
     alignItems: 'center',

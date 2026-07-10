@@ -44,7 +44,7 @@ export default function LotesEntrada() {
         <View style={styles.infoRow}>
           <View style={styles.iconColumn}>
             <Image
-              source={require('../../assets/images/cerdo.png')}
+              source={require('../../assets/images/entradas/cerdo.png')}
               style={styles.pigIcon}
               contentFit="contain"
             />

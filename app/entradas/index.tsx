@@ -74,7 +74,7 @@ export default function Entradas() {
       <View style={styles.centerWrapper}>
       <View style={[styles.mainCard, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
         <Image
-            source={require('../../assets/images/cuchillo.png')}
+            source={require('../../assets/images/entradas/cuchillo.png')}
             style={styles.iconImage}
         />
         <View style={styles.contentColumn}>
