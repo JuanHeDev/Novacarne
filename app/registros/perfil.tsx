@@ -1,39 +1,48 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import Header from '../../components/Header';
 import AlertModal from '../../components/AlertModal';
+import { supabase } from '../../lib/supabase';
 
-const roles = ['Admin', 'Caja'];
-const sucursales = ['Sucursal A', 'Sucursal B', 'Sucursal C'];
+const roles = ['administrador', 'cajero', 'tablajero'];
+
+interface SucursalOption {
+  id: string;
+  nombre: string;
+}
 
 interface Perfil {
   id: string;
-  nombre: string;
-  correo: string;
+  nombre_completo: string;
+  email?: string;
   rol: string;
-  sucursal: string;
+  sucursal_id: string | null;
+  sucursal_nombre?: string;
 }
 
 export default function PerfilScreen() {
   const { width } = useWindowDimensions();
   const { isDark, colors } = useTheme();
 
-  const [nombre, setNombre] = useState('');
-  const [correo, setCorreo] = useState('');
-  const [rol, setRol] = useState('');
-  const [sucursal, setSucursal] = useState('');
-
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
+  const [sucursales, setSucursales] = useState<SucursalOption[]>([]);
+  const [cargando, setCargando] = useState(true);
+
+  const [nombre, setNombre] = useState('');
+  const [rol, setRol] = useState('');
+  const [sucursalId, setSucursalId] = useState('');
+
   const [editPerfil, setEditPerfil] = useState<Perfil | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editNombre, setEditNombre] = useState('');
   const [editRol, setEditRol] = useState('');
-  const [editSucursal, setEditSucursal] = useState('');
+  const [editSucursalId, setEditSucursalId] = useState('');
 
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerItems, setPickerItems] = useState<string[]>([]);
+  const [pickerValues, setPickerValues] = useState<string[]>([]);
   const [pickerTitle, setPickerTitle] = useState('');
   const [pickerTarget, setPickerTarget] = useState<'rol' | 'sucursal' | 'editRol' | 'editSucursal' | null>(null);
 
@@ -48,86 +57,109 @@ export default function PerfilScreen() {
   const cardWidth = isWeb ? 700 : isTablet ? 600 : width * 0.92;
   const titleSize = isWeb ? 26 : isTablet ? 22 : 18;
 
-  const handleRegistrar = () => {
-    if (!nombre.trim() || !correo.trim() || !rol || !sucursal) {
-      setAlertTitle('Campos incompletos');
-      setAlertMessage('Todos los campos son obligatorios.');
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setCargando(true);
+
+    const { data: sucData, error: sucError } = await supabase
+      .from('sucursales')
+      .select('id, nombre')
+      .is('deleted_at', null)
+      .eq('is_active', true);
+    if (sucError) {
+      setAlertTitle('Error al cargar sucursales');
+      setAlertMessage(sucError.message);
       setAlertVisible(true);
-      return;
     }
+    const sucs = sucData || [];
+    setSucursales(sucs);
 
-    /*
-     * CONEXIÓN SUPABASE — Registrar perfil
-     * 1. Crear una tabla `perfiles` en Supabase con:
-     *    - id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
-     *    - nombre TEXT NOT NULL
-     *    - correo TEXT NOT NULL UNIQUE
-     *    - rol TEXT NOT NULL
-     *    - sucursal TEXT NOT NULL
-     *    - created_at TIMESTAMPTZ DEFAULT now()
-     *
-     * 2. Reemplazar el mock de abajo con:
-     *    const { error } = await supabase
-     *      .from('perfiles')
-     *      .insert({ id: data.user.id, nombre, correo, rol, sucursal });
-     *
-     *    Para obtener data.user.id, el usuario debe estar autenticado:
-     *    const { data } = await supabase.auth.getUser();
-     *
-     *    Si el perfil ya existe (conflicto de id), mostrar mensaje.
-     */
-
-    const nuevo: Perfil = {
-      id: Date.now().toString(),
-      nombre: nombre.trim(),
-      correo: correo.trim(),
-      rol,
-      sucursal,
-    };
-    setPerfiles([...perfiles, nuevo]);
-    setNombre('');
-    setCorreo('');
-    setRol('');
-    setSucursal('');
-  };
-
-  const handleEliminar = (id: string) => {
-    /*
-     * CONEXIÓN SUPABASE — Eliminar perfil
-     *    const { error } = await supabase
-     *      .from('perfiles')
-     *      .delete()
-     *      .eq('id', id);
-     */
-    setPerfiles(perfiles.filter(p => p.id !== id));
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('id, nombre_completo, rol, sucursal_id')
+      .order('nombre_completo', { ascending: true });
+    if (error) {
+      setAlertTitle('Error al cargar perfiles');
+      setAlertMessage(`${error.message}\n\nCódigo: ${error.code || 'N/A'}\nDetalle: ${error.details || 'N/A'}`);
+      setAlertVisible(true);
+    } else if (data) {
+      setPerfiles(data.map(p => ({
+        ...p,
+        sucursal_nombre: sucs.find(s => s.id === p.sucursal_id)?.nombre || '',
+      })));
+    }
+    setCargando(false);
   };
 
   const openEdit = (p: Perfil) => {
     setEditPerfil(p);
-    setEditNombre(p.nombre);
-    setEditRol(p.rol);
-    setEditSucursal(p.sucursal);
+    setEditNombre(p.nombre_completo || '');
+    setEditRol(p.rol || '');
+    setEditSucursalId(p.sucursal_id || '');
     setShowEditModal(true);
   };
 
-  const handleGuardarEdit = () => {
-    if (!editNombre.trim() || !editRol || !editSucursal || !editPerfil) return;
+  const handleGuardarEdit = async () => {
+    if (!editNombre.trim() || !editRol || !editPerfil) return;
 
-    /*
-     * CONEXIÓN SUPABASE — Modificar perfil
-     *    const { error } = await supabase
-     *      .from('perfiles')
-     *      .update({ nombre: editNombre.trim(), rol: editRol, sucursal: editSucursal })
-     *      .eq('id', editPerfil.id);
-     */
+    const { error } = await supabase
+      .from('perfiles')
+      .update({
+        nombre_completo: editNombre.trim(),
+        rol: editRol,
+        sucursal_id: editSucursalId || null,
+      })
+      .eq('id', editPerfil.id);
+
+    if (error) {
+      setAlertTitle('Error al modificar');
+      setAlertMessage(error.message);
+      setAlertVisible(true);
+      return;
+    }
 
     setPerfiles(perfiles.map(p =>
       p.id === editPerfil!.id
-        ? { ...p, nombre: editNombre.trim(), rol: editRol, sucursal: editSucursal }
+        ? { ...p, nombre_completo: editNombre.trim(), rol: editRol, sucursal_id: editSucursalId || null, sucursal_nombre: sucursales.find(s => s.id === editSucursalId)?.nombre || '' }
         : p
     ));
     setShowEditModal(false);
     setEditPerfil(null);
+  };
+
+  const handleRegistrar = async () => {
+    if (!nombre.trim() || !rol) return;
+
+    const { error } = await supabase
+      .from('perfiles')
+      .insert({
+        nombre_completo: nombre.trim(),
+        rol,
+        sucursal_id: sucursalId || null,
+      });
+
+    if (error) {
+      setAlertTitle('Error al registrar');
+      setAlertMessage(error.message);
+      setAlertVisible(true);
+      return;
+    }
+
+    setNombre('');
+    setRol('');
+    setSucursalId('');
+    init();
+  };
+
+  const pickerSelect = (label: string) => {
+    if (pickerTarget === 'rol') setRol(label);
+    else if (pickerTarget === 'sucursal') setSucursalId(pickerValues[pickerItems.indexOf(label)] || '');
+    else if (pickerTarget === 'editRol') setEditRol(label);
+    else if (pickerTarget === 'editSucursal') setEditSucursalId(pickerValues[pickerItems.indexOf(label)] || '');
+    setPickerVisible(false);
   };
 
   return (
@@ -142,40 +174,41 @@ export default function PerfilScreen() {
 
           <TextInput
             style={[styles.input, { borderColor: colors.accent, color: colors.text }]}
-            placeholder="Nombre"
+            placeholder="Nombre completo"
             placeholderTextColor="#888"
             value={nombre}
             onChangeText={setNombre}
           />
-          <TextInput
-            style={[styles.input, { borderColor: colors.accent, color: colors.text }]}
-            placeholder="Correo electrónico"
-            placeholderTextColor="#888"
-            value={correo}
-            onChangeText={setCorreo}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
 
-          {/* Rol dropdown */}
           <TouchableOpacity
             style={[styles.dropdown, { borderColor: colors.accent }]}
             onPress={() => { setPickerItems(roles); setPickerTitle('Seleccionar rol'); setPickerTarget('rol'); setPickerVisible(true); }}
           >
-            <Text style={[rol ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
-              {rol || 'Seleccionar rol'}
-            </Text>
+            <View style={styles.dropdownLeft}>
+              <MaterialCommunityIcons name="badge-account" size={20} color={colors.accent} />
+              <Text style={[rol ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
+                {rol || 'Rol'}
+              </Text>
+            </View>
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
 
-          {/* Sucursal dropdown */}
           <TouchableOpacity
             style={[styles.dropdown, { borderColor: colors.accent }]}
-            onPress={() => { setPickerItems(sucursales); setPickerTitle('Seleccionar sucursal'); setPickerTarget('sucursal'); setPickerVisible(true); }}
+            onPress={() => {
+              setPickerItems(sucursales.map(s => s.nombre));
+              setPickerValues(sucursales.map(s => s.id));
+              setPickerTitle('Seleccionar sucursal');
+              setPickerTarget('sucursal');
+              setPickerVisible(true);
+            }}
           >
-            <Text style={[sucursal ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
-              {sucursal || 'Seleccionar sucursal'}
-            </Text>
+            <View style={styles.dropdownLeft}>
+              <MaterialCommunityIcons name="store" size={20} color={colors.accent} />
+              <Text style={[sucursalId ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
+                {sucursales.find(s => s.id === sucursalId)?.nombre || 'Sucursal'}
+              </Text>
+            </View>
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
 
@@ -185,11 +218,13 @@ export default function PerfilScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ——— TABLA DE PERFILES EXISTENTES ——— */}
+        {/* ——— TABLA DE PERFILES ——— */}
         <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth, marginTop: 20 }]}>
           <Text style={[styles.cardTitle, { color: colors.text, fontSize: titleSize }]}>Perfiles existentes</Text>
 
-          {perfiles.length === 0 ? (
+          {cargando ? (
+            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 20 }} />
+          ) : perfiles.length === 0 ? (
             <Text style={{ color: '#888', textAlign: 'center', marginTop: 12, fontSize: 14 }}>
               No hay perfiles registrados aún.
             </Text>
@@ -197,15 +232,14 @@ export default function PerfilScreen() {
             perfiles.map(p => (
               <View key={p.id} style={[styles.perfilRow, { borderBottomColor: colors.accent + '33' }]}>
                 <View style={styles.perfilInfo}>
-                  <Text style={[styles.perfilNombre, { color: colors.text }]}>{p.nombre}</Text>
-                  <Text style={[styles.perfilDetalle, { color: colors.text + '99' }]}>{p.correo} · {p.rol} · {p.sucursal}</Text>
+                  <Text style={[styles.perfilNombre, { color: colors.text }]}>{p.nombre_completo}</Text>
+                  <Text style={[styles.perfilDetalle, { color: colors.text + '99' }]}>
+                    {p.rol || 'Sin rol'} · {p.sucursal_nombre || 'Sin sucursal'}
+                  </Text>
                 </View>
                 <View style={styles.perfilAcciones}>
                   <TouchableOpacity style={[styles.accionBtn, { backgroundColor: colors.accent + '22' }]} onPress={() => openEdit(p)}>
                     <MaterialCommunityIcons name="pencil" size={16} color={colors.accent} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#e74c3c22' }]} onPress={() => handleEliminar(p.id)}>
-                    <MaterialCommunityIcons name="delete" size={16} color="#e74c3c" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -215,38 +249,52 @@ export default function PerfilScreen() {
       </ScrollView>
 
       {/* ——— MODAL DE EDICIÓN ——— */}
-      <Modal visible={showEditModal} transparent animationType="fade">
+      <Modal visible={showEditModal} transparent animationType="fade" onRequestClose={() => setShowEditModal(false)}>
         <View style={modalStyles.overlay}>
           <View style={[modalStyles.content, { backgroundColor: colors.card, width: isMobile ? width * 0.9 : 450 }]}>
             <Text style={[modalStyles.title, { color: colors.text }]}>Modificar Perfil</Text>
+            <Text style={[modalStyles.subtitle, { color: colors.text + '99' }]}>{editPerfil?.nombre_completo}</Text>
 
+            <Text style={[modalStyles.fieldLabel, { color: colors.text }]}>Nombre completo</Text>
             <TextInput
               style={[styles.input, { borderColor: colors.accent, color: colors.text }]}
-              placeholder="Nombre"
+              placeholder="Nombre completo"
               placeholderTextColor="#888"
               value={editNombre}
               onChangeText={setEditNombre}
             />
 
-            {/* Edit Rol dropdown */}
+            <Text style={[modalStyles.fieldLabel, { color: colors.text }]}>Rol</Text>
             <TouchableOpacity
               style={[styles.dropdown, { borderColor: colors.accent }]}
               onPress={() => { setPickerItems(roles); setPickerTitle('Seleccionar rol'); setPickerTarget('editRol'); setPickerVisible(true); }}
             >
-              <Text style={[editRol ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
-                {editRol || 'Seleccionar rol'}
-              </Text>
+              <View style={styles.dropdownLeft}>
+                <MaterialCommunityIcons name="badge-account" size={20} color={colors.accent} />
+                <Text style={[editRol ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
+                  {editRol || 'Rol'}
+                </Text>
+              </View>
               <MaterialCommunityIcons name="chevron-down" size={20} color={colors.text} />
             </TouchableOpacity>
 
-            {/* Edit Sucursal dropdown */}
+            <Text style={[modalStyles.fieldLabel, { color: colors.text }]}>Sucursal</Text>
             <TouchableOpacity
               style={[styles.dropdown, { borderColor: colors.accent }]}
-              onPress={() => { setPickerItems(sucursales); setPickerTitle('Seleccionar sucursal'); setPickerTarget('editSucursal'); setPickerVisible(true); }}
+              onPress={() => {
+                setPickerItems(sucursales.map(s => s.nombre));
+                setPickerValues(sucursales.map(s => s.id));
+                setPickerTitle('Seleccionar sucursal');
+                setPickerTarget('editSucursal');
+                setPickerVisible(true);
+              }}
             >
-              <Text style={[editSucursal ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
-                {editSucursal || 'Seleccionar sucursal'}
-              </Text>
+              <View style={styles.dropdownLeft}>
+                <MaterialCommunityIcons name="store" size={20} color={colors.accent} />
+                <Text style={[editSucursalId ? { color: colors.text } : { color: '#888' }, { fontSize: 15 }]}>
+                  {sucursales.find(s => s.id === editSucursalId)?.nombre || 'Sucursal'}
+                </Text>
+              </View>
               <MaterialCommunityIcons name="chevron-down" size={20} color={colors.text} />
             </TouchableOpacity>
 
@@ -271,13 +319,7 @@ export default function PerfilScreen() {
               <TouchableOpacity
                 key={item}
                 style={[modalStyles.pickerItem, { borderBottomColor: colors.accent + '22' }]}
-                onPress={() => {
-                  if (pickerTarget === 'rol') setRol(item);
-                  else if (pickerTarget === 'sucursal') setSucursal(item);
-                  else if (pickerTarget === 'editRol') setEditRol(item);
-                  else if (pickerTarget === 'editSucursal') setEditSucursal(item);
-                  setPickerVisible(false);
-                }}
+                onPress={() => pickerSelect(item)}
               >
                 <Text style={[modalStyles.pickerItemText, { color: colors.text }]}>{item}</Text>
               </TouchableOpacity>
@@ -330,6 +372,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  dropdownLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
 
   primaryBtn: {
@@ -387,13 +434,25 @@ const modalStyles = StyleSheet.create({
   content: {
     borderRadius: 20,
     padding: 24,
-    gap: 14,
+    gap: 8,
     alignItems: 'center',
+    maxHeight: '85%',
+    width: '90%',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 15,
     marginBottom: 8,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    alignSelf: 'flex-start',
+    marginTop: 4,
   },
   buttons: {
     flexDirection: 'row',
