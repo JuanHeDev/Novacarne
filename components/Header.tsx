@@ -15,14 +15,16 @@ export default function Header({ showBack, onBackPress }: HeaderProps) {
   const router = useRouter();
   const { isDark, toggleTheme, colors } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) setUserEmail(data.user.email);
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from('perfiles').select('nombre_completo').eq('id', user.id).single();
+      setUserName(data?.nombre_completo || user.email?.split('@')[0] || '');
     });
   }, []);
 
@@ -52,7 +54,7 @@ export default function Header({ showBack, onBackPress }: HeaderProps) {
           <View style={[styles.menu, { backgroundColor: colors.card }]}>
             <View style={styles.profileSection}>
               <MaterialCommunityIcons name="account-circle" size={32} color={colors.accent} />
-              <Text style={[styles.profileEmail, { color: colors.text }]}>{userEmail}</Text>
+              <Text style={[styles.profileEmail, { color: colors.text }]}>{userName}</Text>
             </View>
             <View style={[styles.menuDivider, { backgroundColor: colors.text + '22' }]} />
             <TouchableOpacity style={styles.menuItem} onPress={async () => {

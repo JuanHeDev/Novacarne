@@ -1,9 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import Header from '../components/Header';
+import { supabase } from '../lib/supabase';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -16,7 +18,16 @@ export default function Index() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { isDark, colors } = useTheme();
+  const [userName, setUserName] = useState('');
   const greeting = getGreeting();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from('perfiles').select('nombre_completo').eq('id', user.id).single();
+      setUserName(data?.nombre_completo || user.email?.split('@')[0] || '');
+    });
+  }, []);
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -43,7 +54,7 @@ export default function Index() {
             contentFit="contain"
           />
 
-          <Text style={[styles.greeting, { color: colors.text, fontSize }]}>{greeting}</Text>
+          <Text style={[styles.greeting, { color: colors.text, fontSize }]}>{greeting}{userName ? `, ${userName}` : ''}</Text>
 
           <View style={[styles.section, { borderColor: colors.accent, backgroundColor: colors.accent + '0D' }]}>
             <Text style={[styles.sectionTitle, { color: colors.accent }]}>Operativo</Text>
