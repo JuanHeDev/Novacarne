@@ -1,0 +1,8 @@
+{
+  "tasks": {
+    "serve": "supabase functions serve"
+  },
+  "compilerOptions": {
+    "allowJs": true
+  }
+}

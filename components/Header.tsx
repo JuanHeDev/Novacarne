@@ -5,6 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import AlertModal from './AlertModal';
 import { supabase } from '../lib/supabase';
+import { getPerfil } from '../lib/perfil';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -21,10 +22,8 @@ export default function Header({ showBack, onBackPress }: HeaderProps) {
   const [alertMessage, setAlertMessage] = useState('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data } = await supabase.from('perfiles').select('nombre_completo').eq('id', user.id).single();
-      setUserName(data?.nombre_completo || user.email?.split('@')[0] || '');
+    getPerfil().then(perfil => {
+      if (perfil) setUserName(perfil.nombre_completo);
     });
   }, []);
 

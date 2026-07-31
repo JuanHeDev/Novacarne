@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import Header from '../components/Header';
-import { supabase } from '../lib/supabase';
+import { getPerfil } from '../lib/perfil';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -23,11 +23,10 @@ export default function Index() {
   const greeting = getGreeting();
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data } = await supabase.from('perfiles').select('nombre_completo, rol').eq('id', user.id).single();
-      setUserName(data?.nombre_completo || user.email?.split('@')[0] || '');
-      setIsAdmin(data?.rol === 'administrador');
+    getPerfil().then(perfil => {
+      if (!perfil) return;
+      setUserName(perfil.nombre_completo);
+      setIsAdmin(perfil.rol === 'administrador');
     });
   }, []);
 

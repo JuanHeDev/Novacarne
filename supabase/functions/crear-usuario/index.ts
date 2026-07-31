@@ -38,9 +38,6 @@ serve(async (req) => {
       user_metadata: { nombre_completo, rol, sucursal_id },
     })
 
-    let userId: string
-    let userWasCreated = false
-
     if (createError) {
       if (createError.message?.toLowerCase().includes('already been registered') || createError.message?.toLowerCase().includes('already registered')) {
         const { data: users } = await supabase.auth.admin.listUsers()
@@ -48,27 +45,19 @@ serve(async (req) => {
         if (!existing) {
           return new Response(JSON.stringify({ error: `El correo "${email}" ya está registrado en Authentication pero no se pudo recuperar el usuario.` }), { status: 400, headers: corsHeaders })
         }
-        userId = existing.id
-      } else {
-        return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: corsHeaders })
+        await supabase.from('perfiles').upsert({
+          id: existing.id,
+          nombre_completo,
+          rol,
+          sucursal_id: sucursal_id || null,
+        }, { onConflict: 'id' })
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
       }
-    } else if (!userData.user) {
-      return new Response(JSON.stringify({ error: 'No se pudo crear el usuario' }), { status: 500, headers: corsHeaders })
-    } else {
-      userId = userData.user.id
-      userWasCreated = true
+      return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: corsHeaders })
     }
 
-    const { error: perfilError } = await supabase.from('perfiles').upsert({
-      id: userId,
-      nombre_completo,
-      rol,
-      sucursal_id: sucursal_id || null,
-    }, { onConflict: 'id' })
-
-    if (perfilError) {
-      if (userWasCreated) await supabase.auth.admin.deleteUser(userId)
-      return new Response(JSON.stringify({ error: perfilError.message }), { status: 400, headers: corsHeaders })
+    if (!userData.user) {
+      return new Response(JSON.stringify({ error: 'No se pudo crear el usuario' }), { status: 500, headers: corsHeaders })
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })

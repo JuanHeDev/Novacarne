@@ -7,6 +7,7 @@ import { DespieceProvider } from '../contexts/DespieceContext';
 import { EntradasProvider } from '../contexts/EntradasContext';
 import { CanalProvider } from '../contexts/CanalContext';
 import { supabase } from '../lib/supabase';
+import { invalidatePerfil } from '../lib/perfil';
 
 function AuthGuard() {
   const router = useRouter();
@@ -31,6 +32,7 @@ function AuthGuard() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      invalidatePerfil();
       setSession(session);
     });
     return () => subscription.unsubscribe();
