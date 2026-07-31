@@ -19,13 +19,15 @@ export default function Index() {
   const { width } = useWindowDimensions();
   const { isDark, colors } = useTheme();
   const [userName, setUserName] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const greeting = getGreeting();
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const { data } = await supabase.from('perfiles').select('nombre_completo').eq('id', user.id).single();
+      const { data } = await supabase.from('perfiles').select('nombre_completo, rol').eq('id', user.id).single();
       setUserName(data?.nombre_completo || user.email?.split('@')[0] || '');
+      setIsAdmin(data?.rol === 'administrador');
     });
   }, []);
 
@@ -77,10 +79,12 @@ export default function Index() {
                 <MaterialCommunityIcons name="chart-bar" size={buttonIconSize} color={colors.text} />
                 <Text style={[styles.buttonLabel, { color: colors.text }]}>Análisis</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={() => router.push('/registros')}>
-                <MaterialCommunityIcons name="clipboard-list" size={buttonIconSize} color={colors.text} />
-                <Text style={[styles.buttonLabel, { color: colors.text }]}>Registros</Text>
-              </TouchableOpacity>
+              {isAdmin && (
+                <TouchableOpacity style={styles.button} onPress={() => router.push('/registros')}>
+                  <MaterialCommunityIcons name="clipboard-list" size={buttonIconSize} color={colors.text} />
+                  <Text style={[styles.buttonLabel, { color: colors.text }]}>Registros</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.button} onPress={() => router.push('/consultas')}>
                 <MaterialCommunityIcons name="magnify" size={buttonIconSize} color={colors.text} />
                 <Text style={[styles.buttonLabel, { color: colors.text }]}>Consultas</Text>
