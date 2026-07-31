@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -224,6 +225,8 @@ export default function PerfilScreen() {
         {/* ——— FORMULARIO DE REGISTRO ——— */}
         <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth }]}>
           <Text style={[styles.cardTitle, { color: colors.text, fontSize: titleSize }]}>Registrar Perfil</Text>
+
+          <Image source={require('../../assets/images/registros/users.png')} style={styles.cardImage} contentFit="contain" />
 
           <TextInput
             style={[styles.input, { borderColor: colors.accent, color: colors.text }]}
@@ -456,6 +459,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 4,
+  },
+  cardImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: 'center',
+    marginBottom: 4,
+    borderWidth: 2,
+    borderColor: '#170c79',
   },
   input: {
     width: '100%',

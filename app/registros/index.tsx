@@ -40,6 +40,11 @@ export default function Registros() {
             <MaterialCommunityIcons name="package-variant" size={buttonIconSize} color={colors.accent} />
             <Text style={[styles.optionText, { color: colors.text }]}>Producto</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.optionButton, { borderColor: colors.accent }]} onPress={() => router.push('/registros/lote-preliminar')}>
+            <MaterialCommunityIcons name="pig" size={buttonIconSize} color={colors.accent} />
+            <Text style={[styles.optionText, { color: colors.text }]}>Lote Preliminar</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
