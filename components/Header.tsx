@@ -60,7 +60,8 @@ export default function Header({ showBack, onBackPress }: HeaderProps) {
             <TouchableOpacity style={styles.menuItem} onPress={async () => {
               setShowMenu(false);
               const { error } = await supabase.auth.signOut();
-              if (error) { setAlertTitle('Error'); setAlertMessage(error.message); setAlertVisible(true); }
+              if (error) { setAlertTitle('Error'); setAlertMessage(error.message); setAlertVisible(true); return; }
+              router.replace('/login');
             }}>
               <MaterialCommunityIcons name="logout" size={20} color={colors.text} />
               <Text style={[styles.menuItemText, { color: colors.text }]}>Cerrar sesión</Text>
@@ -90,6 +91,8 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 16,
     paddingBottom: 16,
+    position: 'relative',
+    zIndex: 10,
   },
   backButton: {
     width: 44,
@@ -102,6 +105,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    position: 'relative',
   },
   iconButton: {
     width: 44,
@@ -118,6 +122,7 @@ const styles = StyleSheet.create({
     padding: 8,
     minWidth: 150,
     elevation: 4,
+    zIndex: 1000,
   },
   profileSection: {
     flexDirection: 'row',

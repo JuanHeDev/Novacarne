@@ -31,6 +31,9 @@ export default function PerfilScreen() {
   const [cargando, setCargando] = useState(true);
 
   const [nombre, setNombre] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rol, setRol] = useState('');
   const [sucursalId, setSucursalId] = useState('');
 
@@ -49,6 +52,9 @@ export default function PerfilScreen() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
+
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Perfil | null>(null);
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -80,6 +86,7 @@ export default function PerfilScreen() {
     const { data, error } = await supabase
       .from('perfiles')
       .select('id, nombre_completo, rol, sucursal_id')
+      .is('deleted_at', null)
       .order('nombre_completo', { ascending: true });
     if (error) {
       setAlertTitle('Error al cargar perfiles');
@@ -130,27 +137,73 @@ export default function PerfilScreen() {
     setEditPerfil(null);
   };
 
-  const handleRegistrar = async () => {
-    if (!nombre.trim() || !rol) return;
-
+  const handleEliminar = async () => {
+    if (!deleteTarget) return;
     const { error } = await supabase
       .from('perfiles')
-      .insert({
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', deleteTarget.id);
+    if (error) {
+      setAlertTitle('Error al eliminar');
+      setAlertMessage(error.message);
+      setAlertVisible(true);
+    } else {
+      setPerfiles(perfiles.filter(p => p.id !== deleteTarget.id));
+    }
+    setDeleteConfirmVisible(false);
+    setDeleteTarget(null);
+  };
+
+  const handleRegistrar = async () => {
+    if (!nombre.trim() || !email.trim() || !password.trim() || !rol) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) {
+      setAlertTitle('Error de sesión');
+      setAlertMessage('Debes iniciar sesión para registrar usuarios');
+      setAlertVisible(true);
+      return;
+    }
+
+    const { data: fnData, error: fnError } = await supabase.functions.invoke('crear-usuario', {
+      headers: { Authorization: `Bearer ${token}` },
+      body: {
+        email: email.trim(),
+        password,
         nombre_completo: nombre.trim(),
         rol,
         sucursal_id: sucursalId || null,
-      });
+      },
+    });
 
-    if (error) {
-      setAlertTitle('Error al registrar');
-      setAlertMessage(error.message);
+    if (fnError) {
+      let mensaje = 'Error desconocido';
+      try {
+        const body = await fnError.context.json();
+        mensaje = body?.error || mensaje;
+      } catch {}
+      setAlertTitle('Error al crear usuario');
+      setAlertMessage(mensaje);
+      setAlertVisible(true);
+      return;
+    }
+
+    if (!fnData?.success) {
+      setAlertTitle('Error al crear usuario');
+      setAlertMessage(fnData?.error || 'Error desconocido');
       setAlertVisible(true);
       return;
     }
 
     setNombre('');
+    setEmail('');
+    setPassword('');
     setRol('');
     setSucursalId('');
+    setAlertTitle('Perfil registrado');
+    setAlertMessage(`Usuario ${email.trim()} creado exitosamente`);
+    setAlertVisible(true);
     init();
   };
 
@@ -179,6 +232,31 @@ export default function PerfilScreen() {
             value={nombre}
             onChangeText={setNombre}
           />
+
+          <TextInput
+            style={[styles.input, { borderColor: colors.accent, color: colors.text }]}
+            placeholder="Correo electrónico"
+            placeholderTextColor="#888"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+
+          <View style={[styles.input, { borderColor: colors.accent, flexDirection: 'row', alignItems: 'center', paddingRight: 10 }]}>
+            <TextInput
+              style={{ flex: 1, color: colors.text, fontSize: 15 }}
+              placeholder="Contraseña"
+              placeholderTextColor="#888"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.text + '99'} />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={[styles.dropdown, { borderColor: colors.accent }]}
@@ -240,6 +318,9 @@ export default function PerfilScreen() {
                 <View style={styles.perfilAcciones}>
                   <TouchableOpacity style={[styles.accionBtn, { backgroundColor: colors.accent + '22' }]} onPress={() => openEdit(p)}>
                     <MaterialCommunityIcons name="pencil" size={16} color={colors.accent} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#e74c3c22' }]} onPress={() => { setDeleteTarget(p); setDeleteConfirmVisible(true); }}>
+                    <MaterialCommunityIcons name="delete" size={16} color="#e74c3c" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -304,6 +385,27 @@ export default function PerfilScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={[modalStyles.button, modalStyles.buttonAccept, { backgroundColor: colors.accent }]} onPress={handleGuardarEdit}>
                 <Text style={[modalStyles.buttonText, { color: '#fff' }]}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ——— CONFIRMACIÓN DE ELIMINACIÓN ——— */}
+      <Modal visible={deleteConfirmVisible} transparent animationType="fade" onRequestClose={() => setDeleteConfirmVisible(false)}>
+        <View style={modalStyles.overlay}>
+          <View style={[modalStyles.content, { backgroundColor: colors.card, width: isMobile ? width * 0.9 : 400 }]}>
+            <MaterialCommunityIcons name="alert-circle" size={48} color="#e74c3c" />
+            <Text style={[modalStyles.title, { color: colors.text, marginTop: 8 }]}>Eliminar perfil</Text>
+            <Text style={{ color: colors.text + '99', textAlign: 'center', fontSize: 14 }}>
+              ¿Estás seguro de eliminar a {deleteTarget?.nombre_completo}?
+            </Text>
+            <View style={modalStyles.buttons}>
+              <TouchableOpacity style={[modalStyles.button, modalStyles.buttonCancel, { borderColor: colors.accent }]} onPress={() => { setDeleteConfirmVisible(false); setDeleteTarget(null); }}>
+                <Text style={[modalStyles.buttonText, { color: colors.accent }]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[modalStyles.button, modalStyles.buttonAccept, { backgroundColor: '#e74c3c' }]} onPress={handleEliminar}>
+                <Text style={[modalStyles.buttonText, { color: '#fff' }]}>Eliminar</Text>
               </TouchableOpacity>
             </View>
           </View>
