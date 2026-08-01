@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
 
 export type PesoRegistro = {
   numCanal: number;
@@ -15,14 +16,32 @@ type CanalContextType = {
 const CanalContext = createContext<CanalContextType | undefined>(undefined);
 
 export function CanalProvider({ children }: { children: ReactNode }) {
-  const [registros, setRegistros] = useState<PesoRegistro[]>([]);
+  const [sessions, setSessions] = useState<Record<string, PesoRegistro[]>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const registros: PesoRegistro[] = userId ? sessions[userId] ?? [] : [];
 
   function agregarRegistros(nuevos: PesoRegistro[]) {
-    setRegistros(prev => [...prev, ...nuevos]);
+    if (!userId) return;
+    setSessions(prev => ({
+      ...prev,
+      [userId]: [...(prev[userId] ?? []), ...nuevos],
+    }));
   }
 
   function resetRegistros() {
-    setRegistros([]);
+    if (!userId) return;
+    setSessions(prev => ({ ...prev, [userId]: [] }));
   }
 
   return (

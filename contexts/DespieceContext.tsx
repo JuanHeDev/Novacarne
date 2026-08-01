@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
 
 export type CorteTara = {
   nombre: string;
@@ -26,22 +27,48 @@ type DespieceContextType = {
 const DespieceContext = createContext<DespieceContextType | undefined>(undefined);
 
 export function DespieceProvider({ children }: { children: ReactNode }) {
-  const [registros, setRegistros] = useState<Registro[]>([]);
+  const [sessions, setSessions] = useState<Record<string, Registro[]>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const registros: Registro[] = userId ? sessions[userId] ?? [] : [];
 
   function agregarRegistro(registro: Registro) {
-    setRegistros(prev => [...prev, registro]);
+    if (!userId) return;
+    setSessions(prev => ({
+      ...prev,
+      [userId]: [...(prev[userId] ?? []), registro],
+    }));
   }
 
   function actualizarRegistro(id: string, registro: Registro) {
-    setRegistros(prev => prev.map(r => r.id === id ? { ...registro, id } : r));
+    if (!userId) return;
+    setSessions(prev => ({
+      ...prev,
+      [userId]: (prev[userId] ?? []).map(r => r.id === id ? { ...registro, id } : r),
+    }));
   }
 
   function eliminarRegistro(id: string) {
-    setRegistros(prev => prev.filter(r => r.id !== id));
+    if (!userId) return;
+    setSessions(prev => ({
+      ...prev,
+      [userId]: (prev[userId] ?? []).filter(r => r.id !== id),
+    }));
   }
 
   function resetRegistros() {
-    setRegistros([]);
+    if (!userId) return;
+    setSessions(prev => ({ ...prev, [userId]: [] }));
   }
 
   return (
