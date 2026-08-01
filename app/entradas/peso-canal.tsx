@@ -40,13 +40,20 @@ export default function PesoCanal() {
       fecha: new Date(),
     }));
     agregarRegistros(nuevosRegistros);
-    
-    const todosLosRegistros = nuevosRegistros;
-    const numCanales = todosLosRegistros.length;
-    const pesoTotal = todosLosRegistros.reduce((sum, r) => sum + r.peso, 0);
-    
+
+    const numCanales = nuevosRegistros.length;
+    const pesoTotal = nuevosRegistros.reduce((sum, r) => sum + r.peso, 0);
+    const pesosCanales = nuevosRegistros.map(r => ({ num_canal: r.numCanal, peso: r.peso }));
+
     setShowFinalizarModal(false);
-    router.replace({ pathname: '/entradas/lotes-entrada', params: { numCanales: String(numCanales), pesoTotal: String(pesoTotal) } });
+    router.replace({
+      pathname: '/entradas/lotes-entrada',
+      params: {
+        numCanales: String(numCanales),
+        pesoTotal: String(pesoTotal),
+        pesosCanales: JSON.stringify(pesosCanales),
+      },
+    });
   };
 
   const handlePrev = () => {

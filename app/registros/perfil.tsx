@@ -461,9 +461,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     alignSelf: 'center',
     marginBottom: 4,
     borderWidth: 2,

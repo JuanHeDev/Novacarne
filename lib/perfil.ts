@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 interface Perfil {
   nombre_completo: string;
   rol: string;
+  sucursal_id: string | null;
 }
 
 const cache = new Map<string, Perfil>();
@@ -24,12 +25,16 @@ export async function getPerfil(): Promise<Perfil | null> {
   const promise = (async () => {
     const { data: perfil } = await supabase
       .from('perfiles')
-      .select('nombre_completo, rol')
+      .select('nombre_completo, rol, sucursal_id')
       .eq('id', user.id)
       .single();
 
     const result: Perfil | null = perfil
-      ? { nombre_completo: perfil.nombre_completo || user.email?.split('@')[0] || '', rol: perfil.rol }
+      ? {
+          nombre_completo: perfil.nombre_completo || user.email?.split('@')[0] || '',
+          rol: perfil.rol,
+          sucursal_id: perfil.sucursal_id,
+        }
       : null;
 
     if (result) cache.set(user.id, result);
