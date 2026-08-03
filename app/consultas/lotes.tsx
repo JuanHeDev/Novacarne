@@ -26,6 +26,7 @@ interface LoteEntrada {
   sucursal_id: string | null;
   sucursales?: { nombre: string } | null;
   pesos_canales?: { num_canal: number; peso: number }[] | null;
+  capturado_por?: string | null;
 }
 
 type PesoEditable = {
@@ -342,6 +343,13 @@ export default function ConsultaLotes() {
                     </View>
                   </View>
 
+                  <View style={[styles.capturaRow, { borderTopColor: colors.accent + '22' }]}>
+                    <MaterialCommunityIcons name="account" size={16} color={colors.accent} />
+                    <Text style={[styles.capturaText, { color: colors.text + '99' }]} numberOfLines={1}>
+                      Capturado por: {e.capturado_por || '—'}
+                    </Text>
+                  </View>
+
                   {e.notas ? (
                     <View style={[styles.notasContainer, { borderTopColor: colors.accent + '22', backgroundColor: colors.accent + '0d' }]}>
                       <MaterialCommunityIcons name="note-text-outline" size={16} color={colors.accent} />
@@ -594,6 +602,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderRadius: 10,
     padding: 10,
+  },
+  capturaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderTopWidth: 1,
+    paddingTop: 12,
+  },
+  capturaText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
   },
   notasText: {
     flex: 1,

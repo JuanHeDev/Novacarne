@@ -46,6 +46,7 @@ export default function LotesEntrada() {
   const [showSucursalDropdown, setShowSucursalDropdown] = useState(false);
   const [sucursalId, setSucursalId] = useState<string | null>(null);
   const [esAdmin, setEsAdmin] = useState(false);
+  const [usuarioCaptura, setUsuarioCaptura] = useState('');
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -117,6 +118,7 @@ export default function LotesEntrada() {
 
     setEsAdmin(perfil.rol === 'administrador');
     setSucursalId(perfil.sucursal_id);
+    setUsuarioCaptura(perfil.nombre_completo);
   };
 
   useEffect(() => {
@@ -142,6 +144,7 @@ export default function LotesEntrada() {
       preliminar_lote_id: preliminarId,
       sucursal_id: sucursalId,
       pesos_canales: pesosCanales.length > 0 ? pesosCanales : null,
+      capturado_por: usuarioCaptura || null,
     };
 
     const { error } = await supabase
