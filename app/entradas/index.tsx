@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Image, Modal, StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import Header from '../../components/Header';
 import { useCanal } from '../../contexts/CanalContext';
@@ -10,16 +10,14 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 export default function Entradas() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
   const { isDark, colors } = useTheme();
   const { resetRegistros: resetDespieceRegistros } = useDespiece();
   const { resetRegistros: resetCanalRegistros } = useCanal();
   const {
     nuevoLoteActivo, canalCompletado, despieceHabilitado, despieceCompletado, despieceConDatos,
-    setNuevoLoteActivo, setCanalCompletado, setDespieceHabilitado, setDespieceCompletado, setDespieceConDatos,
-    setCantidadCanales, setPersonasCarga,
-    finalizarLote, reiniciar,
+    setNuevoLoteActivo, setCantidadCanales, setPersonasCarga,
+    finalizarLote,
   } = useEntradas();
 
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -29,23 +27,6 @@ export default function Entradas() {
   const [persona1Peso, setPersona1Peso] = useState('');
   const [persona2Nombre, setPersona2Nombre] = useState('');
   const [persona2Peso, setPersona2Peso] = useState('');
-
-  useEffect(() => {
-    if (params.canal === 'true') {
-      setCanalCompletado(true);
-      setDespieceHabilitado(true);
-      setNuevoLoteActivo(false);
-    }
-    if (params.despieceDatos === 'true') {
-      setDespieceConDatos(true);
-    } else if (params.despieceDatos === 'false') {
-      setDespieceConDatos(false);
-    }
-    if (params.despiece === 'true') {
-      setDespieceCompletado(true);
-      setDespieceConDatos(false);
-    }
-  }, [params]);
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -99,10 +80,6 @@ export default function Entradas() {
     resetCanalRegistros();
   };
 
-  const handleReiniciar = () => {
-    reiniciar();
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -116,7 +93,7 @@ export default function Entradas() {
             style={styles.iconImage}
         />
         <View style={styles.contentColumn}>
-          {!nuevoLoteActivo && !canalCompletado ? (
+          {!nuevoLoteActivo ? (
             <TouchableOpacity 
               style={[styles.mainButton, { backgroundColor: colors.accent }]}
               onPress={handleNuevoLote}
@@ -136,12 +113,12 @@ export default function Entradas() {
 
           <View style={[styles.stepsContainer, { borderColor: colors.accent }]}>
             <TouchableOpacity 
-              style={[styles.subButton, { borderColor: nuevoLoteActivo ? colors.accent : '#aaa' }]}
-              disabled={!nuevoLoteActivo}
+              style={[styles.subButton, { borderColor: canalCompletado ? '#aaa' : (nuevoLoteActivo ? colors.accent : '#aaa') }]}
+              disabled={!nuevoLoteActivo || canalCompletado}
               onPress={handleCanal}
             >
-              <MaterialCommunityIcons name="pig" size={24} color={nuevoLoteActivo ? colors.text : '#aaa'} />
-              <Text style={[styles.subButtonText, { color: nuevoLoteActivo ? colors.text : '#aaa' }]}>
+              <MaterialCommunityIcons name="pig" size={24} color={canalCompletado ? '#aaa' : (nuevoLoteActivo ? colors.text : '#aaa')} />
+              <Text style={[styles.subButtonText, { color: canalCompletado ? '#aaa' : (nuevoLoteActivo ? colors.text : '#aaa') }]}>
                 1. Canal
               </Text>
               {canalCompletado && (
@@ -150,15 +127,15 @@ export default function Entradas() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.subButton, { borderColor: despieceHabilitado ? colors.accent : '#aaa' }]}
-              disabled={!despieceHabilitado}
+              style={[styles.subButton, { borderColor: despieceCompletado ? '#aaa' : (despieceHabilitado ? colors.accent : '#aaa') }]}
+              disabled={!despieceHabilitado || despieceCompletado}
               onPress={() => router.push('/entradas/despiece')}
             >
-              <MaterialCommunityIcons name="knife" size={24} color={despieceHabilitado ? colors.text : '#aaa'} />
-              <Text style={[styles.subButtonText, { color: despieceHabilitado ? colors.text : '#aaa' }]}>
+              <MaterialCommunityIcons name="knife" size={24} color={despieceCompletado ? '#aaa' : (despieceHabilitado ? colors.text : '#aaa')} />
+              <Text style={[styles.subButtonText, { color: despieceCompletado ? '#aaa' : (despieceHabilitado ? colors.text : '#aaa') }]}>
                 2. Despiece
               </Text>
-              {despieceConDatos && (
+              {(despieceCompletado || despieceConDatos) && (
                 <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" style={{ marginLeft: 8 }} />
               )}
             </TouchableOpacity>

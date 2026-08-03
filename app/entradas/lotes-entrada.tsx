@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useEntradas } from '../../contexts/EntradasContext';
 import Header from '../../components/Header';
 import AlertModal from '../../components/AlertModal';
 import { supabase } from '../../lib/supabase';
@@ -35,6 +36,7 @@ export default function LotesEntrada() {
   const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
   const { isDark, colors } = useTheme();
+  const { completarCanal } = useEntradas();
   const [notas, setNotas] = useState('');
 
   const [showSeleccionModal, setShowSeleccionModal] = useState(false);
@@ -162,7 +164,8 @@ export default function LotesEntrada() {
     }
 
     setShowSeleccionModal(false);
-    router.push({ pathname: '/entradas', params: { canal: 'true' } });
+    completarCanal();
+    router.back();
   };
 
   return (

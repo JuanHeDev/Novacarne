@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useDespiece, type CorteTara, type Registro } from '../../contexts/DespieceContext';
+import { useEntradas } from '../../contexts/EntradasContext';
 import Header from '../../components/Header';
 import AlertModal from '../../components/AlertModal';
 
@@ -98,6 +99,7 @@ export default function Despiece() {
   const [taraCategoriaDropdown, setTaraCategoriaDropdown] = useState(false);
 
   const { registros, agregarRegistro, actualizarRegistro, eliminarRegistro } = useDespiece();
+  const { completarDespiece, setDespieceConDatos } = useEntradas();
   const [editId, setEditId] = useState<string | null>(null);
 
   const isMobile = width < 768;
@@ -238,8 +240,9 @@ export default function Despiece() {
 
   function confirmarFinalizar() {
     setShowFinalizarModal(false);
+    completarDespiece();
     setAlertTitle('Enviado'); setAlertMessage('Despiece enviado correctamente'); setAlertVisible(true);
-    router.replace({ pathname: '/entradas', params: { despiece: 'true' } });
+    router.back();
   }
 
   function renderPasoNumero(num: number, label: string, activo: boolean) {
@@ -283,7 +286,7 @@ export default function Despiece() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <Header showBack onBackPress={() => router.replace({ pathname: '/entradas', params: { canal: 'true', despieceDatos: registros.length > 0 ? 'true' : 'false' } })} />
+      <Header showBack onBackPress={() => { setDespieceConDatos(registros.length > 0); router.back(); }} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.pageTitle, { color: colors.text, fontSize: titleSize }]}>Despiece</Text>

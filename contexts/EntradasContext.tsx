@@ -42,6 +42,8 @@ type EntradasContextType = {
   setDespieceConDatos: (v: boolean) => void;
   setCantidadCanales: (v: number) => void;
   setPersonasCarga: (v: PersonaCarga[]) => void;
+  completarCanal: () => void;
+  completarDespiece: () => void;
   finalizarLote: () => void;
   reiniciar: () => void;
 };
@@ -120,6 +122,8 @@ export function EntradasProvider({ children }: { children: ReactNode }) {
       setDespieceConDatos: (v) => update({ despieceConDatos: v }),
       setCantidadCanales: (v) => update({ cantidadCanales: v }),
       setPersonasCarga: (v) => update({ personasCarga: v }),
+      completarCanal: () => update({ canalCompletado: true, despieceHabilitado: true }),
+      completarDespiece: () => update({ despieceCompletado: true }),
       finalizarLote,
       reiniciar,
     }}>
