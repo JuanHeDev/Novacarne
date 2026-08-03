@@ -9,11 +9,7 @@ import AlertModal from '../../components/AlertModal';
 import { supabase } from '../../lib/supabase';
 import { getPerfil } from '../../lib/perfil';
 
-const proveedores = [
-  { id: 1, nombre: 'Proveedor A' },
-  { id: 2, nombre: 'Proveedor B' },
-  { id: 3, nombre: 'Proveedor C' },
-];
+const PROVEEDOR_FIJO = 'Rastro Delta';
 
 interface PreliminarOption {
   id: string;
@@ -39,8 +35,6 @@ export default function LotesEntrada() {
   const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
   const { isDark, colors } = useTheme();
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [proveedorSeleccionado, setProveedorSeleccionado] = useState<string | null>(null);
   const [notas, setNotas] = useState('');
 
   const [showSeleccionModal, setShowSeleccionModal] = useState(false);
@@ -132,7 +126,6 @@ export default function LotesEntrada() {
   }, []);
 
   const handleAceptar = () => {
-    if (!proveedorSeleccionado) return;
     setShowSeleccionModal(true);
   };
 
@@ -144,7 +137,7 @@ export default function LotesEntrada() {
       fecha_recepcion: new Date().toISOString(),
       cantidad_canales: numCanales,
       peso_total_lote: pesoTotal,
-      proveedor: proveedorSeleccionado,
+      proveedor: PROVEEDOR_FIJO,
       notas: notas.trim() || null,
       preliminar_lote_id: preliminarId,
       sucursal_id: sucursalId,
@@ -201,58 +194,25 @@ export default function LotesEntrada() {
             </View>
           </View>
 
-          <View style={styles.providerNotesRow}>
-            <View style={[styles.providerColumn, { position: 'relative', flex: 1 }]}>
-              <Text style={[styles.dataLabel, { color: colors.text }]}>Proveedor</Text>
-              <TouchableOpacity
-                style={[styles.dropdown, { borderColor: colors.accent }]}
-                onPress={() => setShowDropdown(!showDropdown)}
-              >
-                <Text style={[styles.dropdownText, { color: proveedorSeleccionado ? colors.text : '#888' }]}>
-                  {proveedorSeleccionado || 'Seleccionar'}
-                </Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color={colors.text} />
-              </TouchableOpacity>
-
-              {showDropdown && (
-                <View style={[styles.dropdownMenu, { backgroundColor: colors.card, borderColor: colors.accent }]}>
-                  {proveedores.map((prov) => (
-                    <TouchableOpacity
-                      key={prov.id}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setProveedorSeleccionado(prov.nombre);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      <Text style={[styles.dropdownItemText, { color: colors.text }]}>{prov.nombre}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            <View style={styles.notesColumn}>
-              <Text style={[styles.dataLabel, { color: colors.text }]}>Notas (opcional)</Text>
-              <TextInput
-                style={[styles.notesInput, { borderColor: colors.accent, color: colors.text }]}
-                placeholder="Agregar notas..."
-                placeholderTextColor="#888"
-                value={notas}
-                onChangeText={setNotas}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
+          <View style={styles.notesContainer}>
+            <Text style={[styles.dataLabel, { color: colors.text }]}>Notas (opcional)</Text>
+            <TextInput
+              style={[styles.notesInput, { borderColor: colors.accent, color: colors.text }]}
+              placeholder="Agregar notas..."
+              placeholderTextColor="#888"
+              value={notas}
+              onChangeText={setNotas}
+              multiline
+              numberOfLines={3}
+            />
           </View>
 
           <TouchableOpacity
             style={[
               styles.acceptButton,
-              { backgroundColor: proveedorSeleccionado ? colors.accent : '#888' }
+              { backgroundColor: colors.accent }
             ]}
             onPress={handleAceptar}
-            disabled={!proveedorSeleccionado}
           >
             <Text style={[styles.acceptButtonText, { color: '#fff' }]}>Aceptar</Text>
           </TouchableOpacity>
@@ -416,15 +376,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  providerNotesRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
+  notesContainer: {
     width: '100%',
-  },
-  providerColumn: {
-    position: 'relative',
-    width: '45%',
+    marginTop: 16,
+    alignSelf: 'center',
   },
   dropdown: {
     flexDirection: 'row',
@@ -458,9 +413,6 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 14,
-  },
-  notesColumn: {
-    width: '55%',
   },
   notesInput: {
     borderWidth: 1,
