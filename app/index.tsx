@@ -23,11 +23,13 @@ export default function Index() {
   const greeting = getGreeting();
 
   useEffect(() => {
+    let activo = true;
     getPerfil().then(perfil => {
-      if (!perfil) return;
+      if (!activo || !perfil) return;
       setUserName(perfil.nombre_completo);
       setIsAdmin(perfil.rol === 'administrador');
     });
+    return () => { activo = false; };
   }, []);
 
   const isMobile = width < 768;
