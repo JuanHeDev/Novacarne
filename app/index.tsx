@@ -66,9 +66,9 @@ export default function Index() {
                 <MaterialCommunityIcons name="arrow-up-box" size={buttonIconSize} color={colors.text} />
                 <Text style={[styles.buttonLabel, { color: colors.text }]}>Entradas</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.button}>
-                <MaterialCommunityIcons name="cash-register" size={buttonIconSize} color={colors.text} />
-                <Text style={[styles.buttonLabel, { color: colors.text }]}>Caja</Text>
+              <TouchableOpacity style={styles.button} disabled>
+                <MaterialCommunityIcons name="cash-register" size={buttonIconSize} color={colors.text + '44'} />
+                <Text style={[styles.buttonLabel, { color: colors.text + '44' }]}>Caja</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -76,9 +76,9 @@ export default function Index() {
           <View style={[styles.section, { borderColor: colors.accent, backgroundColor: colors.accent + '0D' }]}>
             <Text style={[styles.sectionTitle, { color: colors.accent }]}>Administración</Text>
             <View style={styles.buttonsRow}>
-              <TouchableOpacity style={styles.button}>
-                <MaterialCommunityIcons name="chart-bar" size={buttonIconSize} color={colors.text} />
-                <Text style={[styles.buttonLabel, { color: colors.text }]}>Análisis</Text>
+              <TouchableOpacity style={styles.button} disabled>
+                <MaterialCommunityIcons name="chart-bar" size={buttonIconSize} color={colors.text + '44'} />
+                <Text style={[styles.buttonLabel, { color: colors.text + '44' }]}>Análisis</Text>
               </TouchableOpacity>
               {isAdmin && (
                 <TouchableOpacity style={styles.button} onPress={() => router.push('/registros')}>
