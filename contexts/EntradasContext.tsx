@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { cargarEstado, guardarEstado } from '../lib/persistencia';
 import { supabase } from '../lib/supabase';
+
+export type PersonaCarga = {
+  nombre: string;
+  peso: number;
+};
 
 type EntradasState = {
   nuevoLoteActivo: boolean;
@@ -7,6 +13,8 @@ type EntradasState = {
   despieceHabilitado: boolean;
   despieceCompletado: boolean;
   despieceConDatos: boolean;
+  cantidadCanales: number;
+  personasCarga: PersonaCarga[];
 };
 
 const estadoInicial: EntradasState = {
@@ -15,6 +23,8 @@ const estadoInicial: EntradasState = {
   despieceHabilitado: false,
   despieceCompletado: false,
   despieceConDatos: false,
+  cantidadCanales: 0,
+  personasCarga: [],
 };
 
 type EntradasContextType = {
@@ -23,30 +33,57 @@ type EntradasContextType = {
   despieceHabilitado: boolean;
   despieceCompletado: boolean;
   despieceConDatos: boolean;
+  cantidadCanales: number;
+  personasCarga: PersonaCarga[];
   setNuevoLoteActivo: (v: boolean) => void;
   setCanalCompletado: (v: boolean) => void;
   setDespieceHabilitado: (v: boolean) => void;
   setDespieceCompletado: (v: boolean) => void;
   setDespieceConDatos: (v: boolean) => void;
+  setCantidadCanales: (v: number) => void;
+  setPersonasCarga: (v: PersonaCarga[]) => void;
   finalizarLote: () => void;
   reiniciar: () => void;
 };
 
 const EntradasContext = createContext<EntradasContextType | undefined>(undefined);
 
+const CLAVE_PREFIJO = 'novacarne_entradas_';
+
 export function EntradasProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<Record<string, EntradasState>>({});
   const [userId, setUserId] = useState<string | null>(null);
+  const [listo, setListo] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUserId(session?.user?.id ?? null);
+      setListo(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let activo = true;
+    cargarEstado<EntradasState>(CLAVE_PREFIJO + userId).then(persistido => {
+      if (!activo || !persistido) return;
+      setSessions(prev => ({ ...prev, [userId]: persistido }));
+    });
+    return () => {
+      activo = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !listo) return;
+    const estadoActual = sessions[userId];
+    if (!estadoActual) return;
+    guardarEstado(CLAVE_PREFIJO + userId, estadoActual);
+  }, [sessions, userId, listo]);
 
   const state: EntradasState = userId ? sessions[userId] ?? estadoInicial : estadoInicial;
 
@@ -64,7 +101,7 @@ export function EntradasProvider({ children }: { children: ReactNode }) {
   }
 
   function reiniciar() {
-    update({ nuevoLoteActivo: true, canalCompletado: false, despieceHabilitado: false, despieceCompletado: false, despieceConDatos: false });
+    update({ nuevoLoteActivo: true, canalCompletado: false, despieceHabilitado: false, despieceCompletado: false, despieceConDatos: false, cantidadCanales: 0, personasCarga: [] });
   }
 
   return (
@@ -74,11 +111,15 @@ export function EntradasProvider({ children }: { children: ReactNode }) {
       despieceHabilitado: state.despieceHabilitado,
       despieceCompletado: state.despieceCompletado,
       despieceConDatos: state.despieceConDatos,
+      cantidadCanales: state.cantidadCanales,
+      personasCarga: state.personasCarga,
       setNuevoLoteActivo: (v) => update({ nuevoLoteActivo: v }),
       setCanalCompletado: (v) => update({ canalCompletado: v }),
       setDespieceHabilitado: (v) => update({ despieceHabilitado: v }),
       setDespieceCompletado: (v) => update({ despieceCompletado: v }),
       setDespieceConDatos: (v) => update({ despieceConDatos: v }),
+      setCantidadCanales: (v) => update({ cantidadCanales: v }),
+      setPersonasCarga: (v) => update({ personasCarga: v }),
       finalizarLote,
       reiniciar,
     }}>

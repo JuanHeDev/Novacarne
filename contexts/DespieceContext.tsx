@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { cargarEstado, guardarEstado } from '../lib/persistencia';
 import { supabase } from '../lib/supabase';
 
 export type CorteTara = {
@@ -26,19 +27,42 @@ type DespieceContextType = {
 
 const DespieceContext = createContext<DespieceContextType | undefined>(undefined);
 
+const CLAVE_PREFIJO = 'novacarne_despiece_';
+
 export function DespieceProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<Record<string, Registro[]>>({});
   const [userId, setUserId] = useState<string | null>(null);
+  const [listo, setListo] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUserId(session?.user?.id ?? null);
+      setListo(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let activo = true;
+    cargarEstado<Registro[]>(CLAVE_PREFIJO + userId).then(persistido => {
+      if (!activo || !persistido) return;
+      setSessions(prev => ({ ...prev, [userId]: persistido }));
+    });
+    return () => {
+      activo = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !listo) return;
+    const actuales = sessions[userId];
+    if (!actuales) return;
+    guardarEstado(CLAVE_PREFIJO + userId, actuales);
+  }, [sessions, userId, listo]);
 
   const registros: Registro[] = userId ? sessions[userId] ?? [] : [];
 

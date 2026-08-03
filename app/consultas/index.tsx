@@ -31,6 +31,11 @@ export default function Consultas() {
             <MaterialCommunityIcons name="package-variant" size={buttonIconSize} color={colors.accent} />
             <Text style={[styles.optionText, { color: colors.text }]}>Productos</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.optionButton, { borderColor: colors.accent }]} onPress={() => router.push('/consultas/lotes')}>
+            <MaterialCommunityIcons name="pig" size={buttonIconSize} color={colors.accent} />
+            <Text style={[styles.optionText, { color: colors.text }]}>Lotes</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
