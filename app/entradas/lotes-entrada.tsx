@@ -137,6 +137,40 @@ export default function LotesEntrada() {
     if (!preliminarId || !sucursalId || guardando) return;
 
     setGuardando(true);
+
+    const { data: pre, error: errPre } = await supabase
+      .from('preliminar_lote')
+      .select('cantidad_cerdo_en_pie')
+      .eq('id', preliminarId)
+      .single();
+
+    if (errPre || !pre) {
+      setGuardando(false);
+      setAlertTitle('Error');
+      setAlertMessage('No se pudo validar el lote preliminar.');
+      setAlertVisible(true);
+      return;
+    }
+
+    const { data: capturas } = await supabase
+      .from('lotes_entrada')
+      .select('cantidad_canales')
+      .eq('preliminar_lote_id', preliminarId);
+
+    const esperados = pre.cantidad_cerdo_en_pie * 2;
+    const capturados = (capturas || []).reduce((s, c) => s + (c.cantidad_canales ?? 0), 0);
+
+    if (capturados + numCanales > esperados) {
+      setGuardando(false);
+      setAlertTitle('Excede el límite de canales');
+      setAlertMessage(
+        `Este lote preliminar permite máximo ${esperados} canales (${pre.cantidad_cerdo_en_pie} cerdos × 2). ` +
+        `Ya hay ${capturados} canales capturados y este lote agrega ${numCanales}.`
+      );
+      setAlertVisible(true);
+      return;
+    }
+
     const payload = {
       fecha_recepcion: new Date().toISOString(),
       cantidad_canales: numCanales,

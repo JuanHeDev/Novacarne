@@ -51,6 +51,8 @@ export default function ConsultaLotes() {
   const [entradas, setEntradas] = useState<LoteEntrada[]>([]);
   const [cargandoEntradas, setCargandoEntradas] = useState(false);
 
+  const [canalesPorPreliminar, setCanalesPorPreliminar] = useState<Record<string, number>>({});
+
   const [editEntrada, setEditEntrada] = useState<LoteEntrada | null>(null);
   const [editPesos, setEditPesos] = useState<PesoEditable[]>([]);
   const [pesosOriginales, setPesosOriginales] = useState<PesoEditable[]>([]);
@@ -82,6 +84,7 @@ export default function ConsultaLotes() {
 
   useEffect(() => {
     fetchPreliminares();
+    fetchCanalesPorPreliminar();
   }, []);
 
   const fetchEntradas = async (preliminarId: string) => {
@@ -96,6 +99,46 @@ export default function ConsultaLotes() {
     setCargandoEntradas(false);
   };
 
+  const fetchCanalesPorPreliminar = async () => {
+    const { data, error } = await supabase
+      .from('lotes_entrada')
+      .select('preliminar_lote_id, cantidad_canales');
+    if (error) {
+      console.error('Error fetching lotes_entrada (conteo):', JSON.stringify(error, null, 2));
+      return;
+    }
+    const mapa: Record<string, number> = {};
+    (data || []).forEach(le => {
+      const k = le.preliminar_lote_id;
+      if (k) mapa[k] = (mapa[k] || 0) + (le.cantidad_canales ?? 0);
+    });
+    setCanalesPorPreliminar(mapa);
+  };
+
+  const renderProgresoCanales = (capturados: number, esperados: number) => {
+    const pct = esperados > 0 ? Math.min(100, Math.round((capturados / esperados) * 100)) : 0;
+    const completo = esperados > 0 && capturados >= esperados;
+    return (
+      <View style={styles.progresoContainer}>
+        <View style={styles.progresoHeader}>
+          <Text style={[styles.progresoLabel, { color: colors.text + '99' }]}>Canales capturados</Text>
+          <Text style={[styles.progresoValor, { color: completo ? '#4CAF50' : colors.accent }]}>
+            {capturados} / {esperados}
+          </Text>
+        </View>
+        <View style={[styles.progresoBar, { backgroundColor: colors.accent + '22' }]}>
+          <View style={[styles.progresoFill, { width: `${pct}%`, backgroundColor: completo ? '#4CAF50' : colors.accent }]} />
+        </View>
+        {completo && (
+          <View style={styles.progresoCompletoRow}>
+            <MaterialCommunityIcons name="check-circle" size={14} color="#4CAF50" />
+            <Text style={[styles.progresoCompleto, { color: '#4CAF50' }]}>Lote completo</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const handleSeleccionar = (p: Preliminar) => {
     setSeleccionado(p);
     fetchEntradas(p.id);
@@ -104,6 +147,7 @@ export default function ConsultaLotes() {
   const handleVolver = () => {
     setSeleccionado(null);
     setEntradas([]);
+    fetchCanalesPorPreliminar();
   };
 
   const filtrarPeso = (text: string) => {
@@ -192,6 +236,7 @@ export default function ConsultaLotes() {
     setAlertMessage('Los canales del lote fueron actualizados.');
     setAlertVisible(true);
     if (seleccionado) fetchEntradas(seleccionado.id);
+    fetchCanalesPorPreliminar();
   };
 
   return (
@@ -257,6 +302,8 @@ export default function ConsultaLotes() {
                     </View>
                   </View>
 
+                  {renderProgresoCanales(canalesPorPreliminar[p.id] || 0, p.cantidad_cerdo_en_pie * 2)}
+
                   <View style={[styles.tarjetaFooter, { borderTopColor: colors.accent + '22' }]}>
                     <Text style={[styles.footerText, { color: colors.text + '99' }]}>
                       Peso prom. {formatNum(p.peso_promedio_pie)} kg
@@ -293,6 +340,10 @@ export default function ConsultaLotes() {
                   </Text>
                 </View>
               </View>
+              {renderProgresoCanales(
+                entradas.reduce((s, e) => s + (e.cantidad_canales || 0), 0),
+                seleccionado.cantidad_cerdo_en_pie * 2
+              )}
             </View>
 
             {cargandoEntradas ? (
@@ -579,6 +630,41 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
+  },
+  progresoContainer: {
+    gap: 6,
+  },
+  progresoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progresoLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  progresoValor: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  progresoBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progresoFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progresoCompletoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  progresoCompleto: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   tarjetaFooter: {
     flexDirection: 'row',
