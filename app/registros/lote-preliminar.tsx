@@ -1,25 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import Header from '../../components/Header';
 import AlertModal from '../../components/AlertModal';
 import { supabase } from '../../lib/supabase';
-
-interface LotePreliminar {
-  id: string;
-  cantidad_cerdo_en_pie: number;
-  peso_total_granja: number;
-  costo_unitario: number;
-  peso_promedio_pie: number;
-  costo_total_lote: number;
-  fecha_compra: string;
-  deleted_at?: string | null;
-}
-
-const formatNum = (n: number, decimals = 2) =>
-  n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 export default function LotePreliminarScreen() {
   const { width } = useWindowDimensions();
@@ -29,10 +15,6 @@ export default function LotePreliminarScreen() {
   const [pesoTotalGranja, setPesoTotalGranja] = useState('');
   const [costoUnitario, setCostoUnitario] = useState('');
 
-  const [lotes, setLotes] = useState<LotePreliminar[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [mostrarEliminados, setMostrarEliminados] = useState(false);
-
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
@@ -40,19 +22,6 @@ export default function LotePreliminarScreen() {
   const isWeb = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const cardWidth = isWeb ? 700 : isTablet ? 600 : width * 0.92;
-
-  useEffect(() => { fetchLotes(); }, []);
-
-  const fetchLotes = async () => {
-    setCargando(true);
-    const { data, error } = await supabase
-      .from('preliminar_lote')
-      .select('*')
-      .order('fecha_compra', { ascending: false });
-    if (!error && data) setLotes(data);
-    else if (error) console.error('Error fetching preliminar_lote:', JSON.stringify(error, null, 2));
-    setCargando(false);
-  };
 
   const handleRegistrar = async () => {
     const cantidad = parseInt(cantidadCerdos, 10);
@@ -100,11 +69,9 @@ export default function LotePreliminarScreen() {
       costo_unitario: costo,
     };
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('preliminar_lote')
-      .insert(payload)
-      .select()
-      .single();
+      .insert(payload);
 
     if (error) {
       console.error('INSERT error:', JSON.stringify(error, null, 2));
@@ -114,7 +81,6 @@ export default function LotePreliminarScreen() {
       return;
     }
 
-    setLotes([data, ...lotes]);
     setAlertTitle('Registro exitoso');
     setAlertMessage(`Lote preliminar registrado correctamente.`);
     setAlertVisible(true);
@@ -122,42 +88,6 @@ export default function LotePreliminarScreen() {
     setCantidadCerdos('');
     setPesoTotalGranja('');
     setCostoUnitario('');
-  };
-
-  const handleEliminar = async (id: string) => {
-    const { error } = await supabase
-      .from('preliminar_lote')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) {
-      setAlertTitle('Error al eliminar');
-      setAlertMessage(error.message);
-      setAlertVisible(true);
-      return;
-    }
-
-    setLotes(lotes.map(l =>
-      l.id === id ? { ...l, deleted_at: new Date().toISOString() } : l
-    ));
-  };
-
-  const handleRestaurar = async (id: string) => {
-    const { error } = await supabase
-      .from('preliminar_lote')
-      .update({ deleted_at: null })
-      .eq('id', id);
-
-    if (error) {
-      setAlertTitle('Error al restaurar');
-      setAlertMessage(error.message);
-      setAlertVisible(true);
-      return;
-    }
-
-    setLotes(lotes.map(l =>
-      l.id === id ? { ...l, deleted_at: null } : l
-    ));
   };
 
   return (
@@ -216,61 +146,6 @@ export default function LotePreliminarScreen() {
             <Text style={styles.primaryBtnText}>Registrar</Text>
           </TouchableOpacity>
         </View>
-
-        {/* ——— TABLA DE LOTES EXISTENTES ——— */}
-        <View style={[styles.card, { backgroundColor: colors.card, width: cardWidth, marginTop: 20 }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Lotes existentes</Text>
-
-          <View style={styles.filtroRow}>
-            <Text style={[styles.filtroLabel, { color: colors.text }]}>Mostrar eliminados</Text>
-            <Switch
-              value={mostrarEliminados}
-              onValueChange={setMostrarEliminados}
-              trackColor={{ false: '#888', true: colors.accent }}
-              thumbColor={mostrarEliminados ? '#fff' : '#ccc'}
-            />
-          </View>
-
-          {cargando ? (
-            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 20 }} />
-          ) : lotes.filter(l => mostrarEliminados || !l.deleted_at).length === 0 ? (
-            <Text style={{ color: '#888', textAlign: 'center', marginTop: 12, fontSize: 14 }}>
-              {lotes.length === 0
-                ? 'No hay lotes registrados aún.'
-                : 'No hay lotes que coincidan con los filtros.'}
-            </Text>
-          ) : (
-            lotes.filter(l => mostrarEliminados || !l.deleted_at).map(l => (
-              <View key={l.id} style={[styles.loteRow, { borderBottomColor: colors.accent + '33', opacity: l.deleted_at ? 0.5 : 1 }]}>
-                <View style={styles.loteInfo}>
-                  <Text style={[styles.loteNombre, { color: colors.text }]}>
-                    {l.cantidad_cerdo_en_pie.toLocaleString('en-US')} cerdos · {formatNum(l.peso_total_granja)} kg
-                    {l.deleted_at ? (
-                      <Text style={{ color: '#e74c3c', fontSize: 12, fontWeight: 'normal' }}> (Eliminado)</Text>
-                    ) : null}
-                  </Text>
-                  <Text style={[styles.loteDetalle, { color: colors.text + '99' }]}>
-                    ${formatNum(l.costo_unitario)} /kg · Peso prom. {formatNum(l.peso_promedio_pie)} kg
-                  </Text>
-                  <Text style={[styles.loteDetalle, { color: colors.text + '99' }]}>
-                    Costo total: ${formatNum(l.costo_total_lote)}
-                  </Text>
-                </View>
-                <View style={styles.loteAcciones}>
-                  {l.deleted_at ? (
-                    <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#27ae6022' }]} onPress={() => handleRestaurar(l.id)}>
-                      <MaterialCommunityIcons name="restore" size={16} color="#27ae60" />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#e74c3c22' }]} onPress={() => handleEliminar(l.id)}>
-                      <MaterialCommunityIcons name="delete" size={16} color="#e74c3c" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))
-          )}
-        </View>
       </ScrollView>
 
       <AlertModal visible={alertVisible} title={alertTitle} message={alertMessage} onClose={() => setAlertVisible(false)} />
@@ -282,6 +157,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 24,
     paddingHorizontal: 16,
@@ -339,45 +215,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  filtroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 8,
-  },
-  filtroLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  loteRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    paddingVertical: 12,
-    width: '100%',
-  },
-  loteInfo: {
-    flex: 1,
-  },
-  loteNombre: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loteDetalle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  loteAcciones: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  accionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
