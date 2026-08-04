@@ -15,6 +15,7 @@ const PROVEEDOR_FIJO = 'Rastro Delta';
 interface PreliminarOption {
   id: string;
   fecha_compra: string;
+  cantidad_cerdo_en_pie: number;
 }
 
 interface SucursalOption {
@@ -79,7 +80,7 @@ export default function LotesEntrada() {
       const { start, end } = getDayRange(dias);
       const { data, error } = await supabase
         .from('preliminar_lote')
-        .select('id, fecha_compra')
+        .select('id, fecha_compra, cantidad_cerdo_en_pie')
         .is('deleted_at', null)
         .gte('fecha_compra', start)
         .lt('fecha_compra', end)
@@ -288,9 +289,14 @@ export default function LotesEntrada() {
                       size={22}
                       color={seleccionado ? colors.accent : '#888'}
                     />
-                    <Text style={[modalStyles.optionTitle, { color: colors.text }]}>
-                      {new Date(p.fecha_compra).toLocaleDateString('es-CO')}
-                    </Text>
+                    <View style={modalStyles.optionInfo}>
+                      <Text style={[modalStyles.optionTitle, { color: colors.text }]}>
+                        {new Date(p.fecha_compra).toLocaleDateString('es-CO')}
+                      </Text>
+                      <Text style={[modalStyles.optionDetail, { color: colors.text + '99' }]}>
+                        {p.cantidad_cerdo_en_pie} cerdos
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })
@@ -513,6 +519,9 @@ const modalStyles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     width: '100%',
+  },
+  optionInfo: {
+    flex: 1,
   },
   optionTitle: {
     fontSize: 15,

@@ -112,6 +112,7 @@ export default function PesoCanal() {
 
   const handleNext = () => {
     guardarCanalActual();
+    if (numCanal >= minCanales) return;
     setNumCanal(numCanal + 1);
     setPeso(pesosMap[numCanal + 1]?.toString() || '');
   };
@@ -217,13 +218,14 @@ export default function PesoCanal() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.navButton, { borderColor: colors.accent }]}
+              style={[styles.navButton, { borderColor: numCanal >= minCanales ? '#ccc' : colors.accent }]}
+              disabled={numCanal >= minCanales}
               onPress={handleNext}
             >
               <MaterialCommunityIcons 
                 name="arrow-right" 
                 size={28} 
-                color={peso ? colors.accent : '#ccc'} 
+                color={numCanal >= minCanales ? '#ccc' : (peso ? colors.accent : '#ccc')} 
               />
             </TouchableOpacity>
           </View>

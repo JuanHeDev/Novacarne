@@ -73,7 +73,10 @@ export function EntradasProvider({ children }: { children: ReactNode }) {
     let activo = true;
     cargarEstado<EntradasState>(CLAVE_PREFIJO + userId).then(persistido => {
       if (!activo || !persistido) return;
-      setSessions(prev => ({ ...prev, [userId]: persistido }));
+      setSessions(prev => {
+        if (prev[userId] !== undefined) return prev;
+        return { ...prev, [userId]: persistido };
+      });
     });
     return () => {
       activo = false;
