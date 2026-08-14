@@ -10,6 +10,9 @@ import { supabase } from '../../lib/supabase';
 const categorias = ['Carnes', 'Embutidos', 'Limpieza', 'Empaque', 'Otros'];
 const unidades = ['kg', 'pzas'];
 
+const formatNum = (n: number, decimals = 2) =>
+  n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
 interface Producto {
   id: string;
   nombre: string;
@@ -28,6 +31,9 @@ export default function ConsultaProductos() {
   const [cargando, setCargando] = useState(true);
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [mostrarEliminados, setMostrarEliminados] = useState(false);
+
+  const [pagina, setPagina] = useState(1);
+  const porPagina = 10;
 
   const [editProducto, setEditProducto] = useState<Producto | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -75,6 +81,10 @@ export default function ConsultaProductos() {
     if (!mostrarEliminados && p.deleted_at) return false;
     return true;
   });
+
+  const totalPaginas = Math.max(1, Math.ceil(productosVisibles.length / porPagina));
+  const paginaSegura = Math.min(pagina, totalPaginas);
+  const productosPagina = productosVisibles.slice((paginaSegura - 1) * porPagina, paginaSegura * porPagina);
 
   const handleEliminar = async (id: string) => {
     const { error } = await supabase
@@ -153,7 +163,10 @@ export default function ConsultaProductos() {
   const pickerSelect = (item: string) => {
     if (pickerTarget === 'editCategoria') setEditCategoria(item);
     else if (pickerTarget === 'editUnidad') setEditUnidad(item);
-    else if (pickerTarget === 'filtro') setFiltroCategoria(item);
+    else if (pickerTarget === 'filtro') {
+      setFiltroCategoria(item);
+      setPagina(1);
+    }
     setPickerVisible(false);
   };
 
@@ -190,7 +203,7 @@ export default function ConsultaProductos() {
             <Text style={[styles.filtroLabel, { color: colors.text }]}>Mostrar eliminados</Text>
             <Switch
               value={mostrarEliminados}
-              onValueChange={setMostrarEliminados}
+              onValueChange={v => { setMostrarEliminados(v); setPagina(1); }}
               trackColor={{ false: '#888', true: colors.accent }}
               thumbColor={mostrarEliminados ? '#fff' : '#ccc'}
             />
@@ -205,37 +218,85 @@ export default function ConsultaProductos() {
                 : 'No hay productos que coincidan con los filtros.'}
             </Text>
           ) : (
-            productosVisibles.map(p => (
-              <View key={p.id} style={[styles.productoRow, { borderBottomColor: colors.accent + '33', opacity: p.deleted_at ? 0.5 : 1 }]}>
-                <View style={styles.productoInfo}>
-                  <Text style={[styles.productoNombre, { color: colors.text }]}>
-                    {p.nombre}
-                    {p.deleted_at ? (
-                      <Text style={{ color: '#e74c3c', fontSize: 12, fontWeight: 'normal' }}> (Eliminado)</Text>
-                    ) : null}
-                  </Text>
-                  <Text style={[styles.productoDetalle, { color: colors.text + '99' }]}>
-                    {p.categoria} · {p.unidad_medida}{p.es_insumo ? ' · Insumo' : ''}
-                  </Text>
+            <>
+              {productosPagina.map(p => (
+                <View key={p.id} style={[styles.productoCard, { backgroundColor: colors.card + '66', borderColor: p.deleted_at ? '#e74c3c44' : colors.accent + '44', opacity: p.deleted_at ? 0.6 : 1 }]}>
+                  <View style={styles.productoCardHeader}>
+                    <View style={styles.productoInfo}>
+                      <Text style={[styles.productoNombre, { color: colors.text }]} numberOfLines={1}>
+                        {p.nombre}
+                      </Text>
+                      <View style={styles.badges}>
+                        <View style={[styles.badge, { backgroundColor: colors.accent + '22' }]}>
+                          <MaterialCommunityIcons name="tag-text-outline" size={13} color={colors.accent} />
+                          <Text style={[styles.badgeText, { color: colors.accent }]}>{p.categoria}</Text>
+                        </View>
+                        <View style={[styles.badge, { backgroundColor: colors.accent + '22' }]}>
+                          <MaterialCommunityIcons name="scale-balance" size={13} color={colors.accent} />
+                          <Text style={[styles.badgeText, { color: colors.accent }]}>{p.unidad_medida}</Text>
+                        </View>
+                        {p.es_insumo && (
+                          <View style={[styles.badge, { backgroundColor: '#27ae6022' }]}>
+                            <MaterialCommunityIcons name="archive" size={13} color="#27ae60" />
+                            <Text style={[styles.badgeText, { color: '#27ae60' }]}>Insumo</Text>
+                          </View>
+                        )}
+                        {p.deleted_at && (
+                          <View style={[styles.badge, { backgroundColor: '#e74c3c22' }]}>
+                            <MaterialCommunityIcons name="alert-circle" size={13} color="#e74c3c" />
+                            <Text style={[styles.badgeText, { color: '#e74c3c' }]}>Eliminado</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.productoAcciones}>
+                      {p.deleted_at ? (
+                        <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#27ae6022' }]} onPress={() => handleRestaurar(p.id)}>
+                          <MaterialCommunityIcons name="restore" size={18} color="#27ae60" />
+                        </TouchableOpacity>
+                      ) : (
+                        <>
+                          <TouchableOpacity style={[styles.accionBtn, { backgroundColor: colors.accent + '22' }]} onPress={() => openEdit(p)}>
+                            <MaterialCommunityIcons name="pencil" size={18} color={colors.accent} />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#e74c3c22' }]} onPress={() => handleEliminar(p.id)}>
+                            <MaterialCommunityIcons name="delete" size={18} color="#e74c3c" />
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                  <View style={[styles.productoCardFooter, { borderTopColor: colors.accent + '22' }]}>
+                    <View>
+                      <Text style={[styles.precioLabel, { color: colors.text + '99' }]}>Precio de venta</Text>
+                      <Text style={[styles.precioValor, { color: colors.accent }]}>${formatNum(p.precio_venta)}</Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.productoAcciones}>
-                  {p.deleted_at ? (
-                    <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#27ae6022' }]} onPress={() => handleRestaurar(p.id)}>
-                      <MaterialCommunityIcons name="restore" size={16} color="#27ae60" />
-                    </TouchableOpacity>
-                  ) : (
-                    <>
-                      <TouchableOpacity style={[styles.accionBtn, { backgroundColor: colors.accent + '22' }]} onPress={() => openEdit(p)}>
-                        <MaterialCommunityIcons name="pencil" size={16} color={colors.accent} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#e74c3c22' }]} onPress={() => handleEliminar(p.id)}>
-                        <MaterialCommunityIcons name="delete" size={16} color="#e74c3c" />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
+              ))}
+
+              <View style={styles.paginador}>
+                <TouchableOpacity
+                  style={[styles.paginadorBtn, { borderColor: colors.accent + '44' }]}
+                  disabled={paginaSegura <= 1}
+                  onPress={() => setPagina(paginaSegura - 1)}
+                >
+                  <MaterialCommunityIcons name="chevron-left" size={20} color={paginaSegura <= 1 ? '#888' : colors.accent} />
+                  <Text style={[styles.paginadorText, { color: paginaSegura <= 1 ? '#888' : colors.accent }]}>Anterior</Text>
+                </TouchableOpacity>
+                <Text style={[styles.paginadorInfo, { color: colors.text }]}>
+                  Página {paginaSegura} de {totalPaginas}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.paginadorBtn, { borderColor: colors.accent + '44' }]}
+                  disabled={paginaSegura >= totalPaginas}
+                  onPress={() => setPagina(paginaSegura + 1)}
+                >
+                  <Text style={[styles.paginadorText, { color: paginaSegura >= totalPaginas ? '#888' : colors.accent }]}>Siguiente</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={paginaSegura >= totalPaginas ? '#888' : colors.accent} />
+                </TouchableOpacity>
               </View>
-            ))
+            </>
           )}
         </View>
       </ScrollView>
@@ -427,23 +488,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  productoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    paddingVertical: 12,
+  productoCard: {
     width: '100%',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+  },
+  productoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
   },
   productoInfo: {
     flex: 1,
   },
   productoNombre: {
     fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  badges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+  },
+  badgeText: {
+    fontSize: 12,
     fontWeight: '600',
   },
-  productoDetalle: {
-    fontSize: 13,
-    marginTop: 2,
+  productoCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    paddingTop: 10,
+  },
+  precioLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  precioValor: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   productoAcciones: {
     flexDirection: 'row',
@@ -455,6 +551,30 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  paginador: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 4,
+  },
+  paginadorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  paginadorText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  paginadorInfo: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

@@ -318,9 +318,9 @@ export default function ConsultaLotes() {
           </View>
         ) : (
           <View style={{ width: cardWidth }}>
-            <TouchableOpacity style={styles.backButton} onPress={handleVolver}>
-              <MaterialCommunityIcons name="arrow-left" size={20} color={colors.accent} />
-              <Text style={[styles.backButtonText, { color: colors.accent }]}>Volver a lotes preliminares</Text>
+            <TouchableOpacity style={[styles.backButton, { borderColor: colors.accent + '44' }]} onPress={handleVolver}>
+              <MaterialCommunityIcons name="arrow-left" size={18} color={colors.accent} />
+              <Text style={[styles.backButtonText, { color: colors.accent }]}>Lotes preliminares</Text>
             </TouchableOpacity>
 
             <View style={[styles.tarjeta, { backgroundColor: colors.card, borderColor: colors.accent + '55' }]}>
@@ -709,7 +709,12 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderRadius: 10,
     marginBottom: 14,
   },
   backButtonText: {
