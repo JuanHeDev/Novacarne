@@ -1,80 +1,51 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useDespiece, type CorteTara, type Registro } from '../../contexts/DespieceContext';
 import { useEntradas } from '../../contexts/EntradasContext';
 import Header from '../../components/Header';
 import AlertModal from '../../components/AlertModal';
+import { supabase } from '../../lib/supabase';
+import { getPerfil } from '../../lib/perfil';
 
-const categorias = [
-  { id: 1, nombre: 'Cortes primarios', icono: 'food-steak' },
-  { id: 2, nombre: 'Cortes especiales', icono: 'food-variant' },
-  { id: 3, nombre: 'Despojos y menudencia', icono: 'emoticon-outline' },
-  { id: 4, nombre: 'Grasas y cueros', icono: 'water' },
-  { id: 5, nombre: 'Huesos', icono: 'bone' },
+interface ProductoDespiece {
+  id: string;
+  nombre: string;
+  categoria: string;
+  sub_categoria: string | null;
+}
+
+type Step = 'canal' | 'categoria' | 'corte' | 'tara';
+
+const ordenPasos: Record<Step, number> = { canal: 1, categoria: 2, corte: 3, tara: 4 };
+
+const taraOpciones = [
+  { id: 1, nombre: 'Diablito', peso: '16kg', icono: 'truck-delivery' },
+  { id: 2, nombre: 'Tina metal 1', peso: '5kg', icono: 'water' },
+  { id: 3, nombre: 'Tina metal 2', peso: '8kg', icono: 'water' },
+  { id: 4, nombre: 'Tina naranja', peso: '2.3kg', icono: 'pot-steam' },
+  { id: 5, nombre: 'Cajas buche', peso: '0.5kg', icono: 'cube-outline' },
+  { id: 6, nombre: 'Charola 1', peso: '0.5kg', icono: 'square-outline' },
+  { id: 7, nombre: 'Charola 2', peso: '1.1kg', icono: 'square-outline' },
 ];
 
-const cortesData = {
-  'Cortes primarios': [
-    { nombre: 'Pierna', icono: 'food-steak' },
-    { nombre: 'Lomo', icono: 'food-steak' },
-    { nombre: 'Cabeza de lomo', icono: 'food-steak' },
-    { nombre: 'Filete', icono: 'food-steak' },
-    { nombre: 'Espaldilla', icono: 'food-steak' },
-  ],
-  'Cortes especiales': [
-    { nombre: 'Costilla', icono: 'food' },
-    { nombre: 'Espinazo', icono: 'bone' },
-    { nombre: 'Chamorro', icono: 'food' },
-    { nombre: 'Entrecot', icono: 'food-steak' },
-  ],
-  'Despojos y menudencia': [
-    { nombre: 'Cabeza/Mascara', icono: 'emoticon-outline' },
-    { nombre: 'Lengua/Oreja/Sesos', icono: 'ear-hearing' },
-    { nombre: 'Patas/Colas', icono: 'foot-print' },
-    { nombre: 'Papada', icono: 'food-variant' },
-  ],
-  'Grasas y cueros': [
-    { nombre: 'Grasa/Unto', icono: 'water' },
-    { nombre: 'Tocino Natural', icono: 'food-variant' },
-    { nombre: 'Cuero 1/2 Flor', icono: 'square' },
-    { nombre: 'Recorte 80/20', icono: 'content-cut' },
-  ],
-  'Huesos': [
-    { nombre: 'Hueso Pelon', icono: 'bone' },
-    { nombre: 'Hueso Carne', icono: 'bone' },
-    { nombre: 'Hueso Decomiso', icono: 'delete' },
-  ],
-};
-
-const opcionesTara = {
-  'Logística y Carga': [
-    { id: 1, nombre: 'Carrito chorizo', peso: '30kg', icono: 'cart' },
-    { id: 2, nombre: 'Diablito', peso: '16kg', icono: 'truck-delivery' },
-  ],
-  'Recipientes de Proceso': [
-    { id: 3, nombre: 'Tinas metal 5kg', peso: '5kg', icono: 'water' },
-    { id: 4, nombre: 'Tinas metal 8kg', peso: '8kg', icono: 'water' },
-    { id: 5, nombre: 'Tina carnitas', peso: '10kg', icono: 'pot-steam' },
-    { id: 6, nombre: 'Tina naranja', peso: '2.3kg', icono: 'pot-steam' },
-  ],
-  'Accesorios de Pesaje': [
-    { id: 7, nombre: 'Gancho pesaje cerdos', peso: '3.390kg', icono: 'scale-bathroom' },
-    { id: 8, nombre: 'Ganchos chorizo', peso: '0.28kg', icono: 'hook' },
-  ],
-  'Almacenaje y Empaque': [
-    { id: 9, nombre: 'Cajas buche', peso: '0.5kg', icono: 'cube-outline' },
-    { id: 10, nombre: 'Charolas 0.5kg', peso: '0.5kg', icono: 'square-outline' },
-    { id: 11, nombre: 'Charolas 1.1kg', peso: '1.1kg', icono: 'square-outline' },
-  ],
-};
-
-const categoriasTara = Object.keys(opcionesTara) as Array<keyof typeof opcionesTara>;
+const TARA_ESPECIAL = { id: 99, nombre: 'Tara especial', peso: '0kg', icono: 'scale' };
 
 function parsePeso(pesoStr: string): number {
   return parseFloat(pesoStr.replace('kg', '')) || 0;
+}
+
+function iconoSubcategoria(cat: string): string {
+  const c = cat.toLowerCase();
+  if (c.includes('primario')) return 'food-steak';
+  if (c.includes('especial')) return 'food-variant';
+  if (c.includes('despojo') || c.includes('menudencia')) return 'emoticon-outline';
+  if (c.includes('grasa') || c.includes('cuero')) return 'water';
+  if (c.includes('hueso')) return 'bone';
+  return 'food-steak';
 }
 
 export default function Despiece() {
@@ -86,21 +57,69 @@ export default function Despiece() {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
 
-  const [step, setStep] = useState<'categoria' | 'corte' | 'tara'>('categoria');
+  const [step, setStep] = useState<Step>('canal');
+  const [numCanal, setNumCanal] = useState<number | null>(null);
   const [categoria, setCategoria] = useState<string | null>(null);
   const [corte, setCorte] = useState<string | null>(null);
   const [peso, setPeso] = useState('');
 
   const [aplicaTara, setAplicaTara] = useState<boolean | null>(null);
-  const [taraCategoria, setTaraCategoria] = useState<string | null>(null);
   const [taraItem, setTaraItem] = useState<{ id: number; nombre: string; peso: string; icono: string } | null>(null);
+  const [taraEspecial, setTaraEspecial] = useState(false);
+  const [taraEspecialPeso, setTaraEspecialPeso] = useState('');
   const [taraCantidad, setTaraCantidad] = useState('');
-  const [taraDropdown, setTaraDropdown] = useState(false);
-  const [taraCategoriaDropdown, setTaraCategoriaDropdown] = useState(false);
 
   const { registros, agregarRegistro, actualizarRegistro, eliminarRegistro } = useDespiece();
   const { completarDespiece, setDespieceConDatos } = useEntradas();
   const [editId, setEditId] = useState<string | null>(null);
+
+  const [productos, setProductos] = useState<ProductoDespiece[]>([]);
+  const [cargandoProductos, setCargandoProductos] = useState(true);
+
+  const [canales, setCanales] = useState<{ num_canal: number; peso: number }[]>([]);
+  const [cargandoCanales, setCargandoCanales] = useState(true);
+
+  const canalesCompletados = canales.filter(c => registros.some(r => r.numCanal === c.num_canal));
+  const canalesPendientes = canales.filter(c => !registros.some(r => r.numCanal === c.num_canal));
+  const puedeFinalizar = canales.length > 0 && canalesPendientes.length === 0;
+
+  useEffect(() => {
+    fetchProductos();
+    fetchCanales();
+  }, []);
+
+  const fetchProductos = async () => {
+    setCargandoProductos(true);
+    const { data, error } = await supabase
+      .from('productos')
+      .select('id, nombre, categoria, sub_categoria')
+      .eq('categoria', 'carnes')
+      .is('deleted_at', null)
+      .order('nombre', { ascending: true });
+    if (!error && data) setProductos(data);
+    else if (error) console.error('Error fetching productos:', JSON.stringify(error, null, 2));
+    setCargandoProductos(false);
+  };
+
+  const fetchCanales = async () => {
+    setCargandoCanales(true);
+    const perfil = await getPerfil();
+    if (!perfil?.sucursal_id) {
+      setCargandoCanales(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('lotes_entrada')
+      .select('pesos_canales')
+      .eq('sucursal_id', perfil.sucursal_id)
+      .not('pesos_canales', 'is', null)
+      .order('fecha_recepcion', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!error && data?.pesos_canales) setCanales(data.pesos_canales);
+    else if (error) console.error('Error fetching canales:', JSON.stringify(error, null, 2));
+    setCargandoCanales(false);
+  };
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -111,21 +130,37 @@ export default function Despiece() {
   const corteItemWidth = isMobile ? '47%' : isTablet ? '30%' : '30%';
   const pasoLineWidth = isWeb ? 60 : isTablet ? 50 : 30;
   const titleSize = isWeb ? 32 : isTablet ? 28 : 24;
-  const stepTitleSize = isWeb ? 22 : isTablet ? 20 : 18;
   const cardPadding = isWeb ? 32 : isTablet ? 28 : 20;
 
-  const cortes = categoria ? cortesData[categoria as keyof typeof cortesData] || [] : [];
+  const categorias = Array.from(new Set(productos.map(p => p.sub_categoria?.trim()).filter(Boolean) as string[])).sort();
+
+  const cortes = categoria ? productos.filter(p => p.sub_categoria === categoria) : [];
 
   function resetForm() {
     setCategoria(null);
     setCorte(null);
     setPeso('');
     setAplicaTara(null);
-    setTaraCategoria(null);
     setTaraItem(null);
+    setTaraEspecial(false);
+    setTaraEspecialPeso('');
     setTaraCantidad('');
     setStep('categoria');
     setEditId(null);
+  }
+
+  function seleccionarCanal(n: number) {
+    setNumCanal(n);
+    setCategoria(null);
+    setCorte(null);
+    setPeso('');
+    setAplicaTara(null);
+    setTaraItem(null);
+    setTaraEspecial(false);
+    setTaraEspecialPeso('');
+    setTaraCantidad('');
+    setEditId(null);
+    setStep('categoria');
   }
 
   function handleSelectCategoria(cat: string) {
@@ -133,8 +168,9 @@ export default function Despiece() {
     setCorte(null);
     setPeso('');
     setAplicaTara(null);
-    setTaraCategoria(null);
     setTaraItem(null);
+    setTaraEspecial(false);
+    setTaraEspecialPeso('');
     setTaraCantidad('');
     setStep('corte');
   }
@@ -144,14 +180,34 @@ export default function Despiece() {
     setPeso('');
   }
 
+  function seleccionarTara(item: { id: number; nombre: string; peso: string; icono: string }) {
+    setTaraItem(item);
+    setTaraEspecial(item.id === TARA_ESPECIAL.id);
+  }
+
+  function volverPaso() {
+    if (step === 'tara') {
+      setStep('corte');
+    } else if (step === 'corte') {
+      setCorte(null);
+      setPeso('');
+      setEditId(null);
+      setStep('categoria');
+    } else if (step === 'categoria') {
+      setEditId(null);
+      setStep('canal');
+    }
+  }
+
   function handleSiguientePeso() {
     if (!corte || !peso || parseFloat(peso) <= 0) {
       setAlertTitle('Error'); setAlertMessage('Ingresa un peso válido'); setAlertVisible(true);
       return;
     }
     setAplicaTara(null);
-    setTaraCategoria(null);
     setTaraItem(null);
+    setTaraEspecial(false);
+    setTaraEspecialPeso('');
     setTaraCantidad('');
     setStep('tara');
   }
@@ -164,7 +220,7 @@ export default function Despiece() {
     const pesoNum = parseFloat(peso) || 0;
     let taraData: CorteTara | undefined;
     if (taraItem && taraCantidad) {
-      const pesoTaraUnidad = parsePeso(taraItem.peso);
+      const pesoTaraUnidad = taraItem.id === TARA_ESPECIAL.id ? (parseFloat(taraEspecialPeso) || 0) : parsePeso(taraItem.peso);
       const cantidad = parseFloat(taraCantidad) || 0;
       taraData = {
         nombre: taraItem.nombre,
@@ -176,6 +232,7 @@ export default function Despiece() {
 
     const registro: Registro = {
       id: Date.now().toString(),
+      numCanal: numCanal ?? 0,
       categoria: categoria!,
       corte: corte!,
       peso: pesoNum,
@@ -197,30 +254,29 @@ export default function Despiece() {
       setAlertTitle('Error'); setAlertMessage('Selecciona un elemento de tara y captura la cantidad'); setAlertVisible(true);
       return;
     }
+    if (taraEspecial && (!taraEspecialPeso || parseFloat(taraEspecialPeso) <= 0)) {
+      setAlertTitle('Error'); setAlertMessage('Especifica el peso de la tara especial'); setAlertVisible(true);
+      return;
+    }
     guardarRegistro();
   }
 
   function handleModificar(registro: Registro) {
+    setNumCanal(registro.numCanal);
     setCategoria(registro.categoria);
     setCorte(registro.corte);
     setPeso(registro.peso.toString());
     if (registro.tara) {
       setAplicaTara(true);
-      setTaraItem({
-        id: 0,
-        nombre: registro.tara.nombre,
-        peso: registro.tara.peso + 'kg',
-        icono: 'scale-bathroom',
-      });
       setTaraCantidad(registro.tara.cantidad.toString());
-      for (const cat of categoriasTara) {
-        for (const item of opcionesTara[cat]) {
-          if (item.nombre === registro.tara.nombre) {
-            setTaraCategoria(cat);
-            setTaraItem(item);
-            break;
-          }
-        }
+      const itemEncontrado = taraOpciones.find(o => o.nombre === registro.tara.nombre);
+      if (itemEncontrado) {
+        setTaraItem(itemEncontrado);
+        setTaraEspecial(false);
+      } else {
+        setTaraItem(TARA_ESPECIAL);
+        setTaraEspecial(true);
+        setTaraEspecialPeso(registro.tara.peso.toString());
       }
     } else {
       setAplicaTara(false);
@@ -245,10 +301,11 @@ export default function Despiece() {
     router.back();
   }
 
-  function renderPasoNumero(num: number, label: string, activo: boolean) {
-    const col = step === 'categoria' && num === 1 || step === 'corte' && num === 2 || step === 'tara' && num === 3;
+  function renderPasoNumero(num: number, label: string) {
+    const activo = ordenPasos[step] === num;
+    const pasado = ordenPasos[step] > num;
     return (
-      <View style={[styles.paso, { backgroundColor: activo ? colors.accent : (col ? colors.accent + '33' : colors.card), borderColor: activo ? colors.accent : colors.accent + '44' }]}>
+      <View style={[styles.paso, { backgroundColor: activo ? colors.accent : (pasado ? colors.accent + '33' : colors.card), borderColor: activo ? colors.accent : colors.accent + '44' }]}>
         <Text style={[styles.pasoNum, { color: activo ? '#fff' : colors.text }]}>{num}</Text>
         <Text style={[styles.pasoLabel, { color: activo ? '#fff' : colors.text, fontWeight: activo ? '600' : '400' }]}>{label}</Text>
       </View>
@@ -256,11 +313,14 @@ export default function Despiece() {
   }
 
   function renderRegistros() {
-    if (registros.length === 0) return null;
+    const registrosFiltrados = numCanal !== null ? registros.filter(r => r.numCanal === numCanal) : registros;
+    if (registrosFiltrados.length === 0) return null;
     return (
       <View style={[styles.registrosCard, { backgroundColor: colors.card, width: cardWidth }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Registros capturados ({registros.length})</Text>
-        {registros.map(r => (
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          {numCanal !== null ? `Registros del Canal ${numCanal} (${registrosFiltrados.length})` : `Registros capturados (${registrosFiltrados.length})`}
+        </Text>
+        {registrosFiltrados.map(r => (
           <View key={r.id} style={[styles.registroRow, { borderColor: colors.accent + '44' }]}>
             <View style={styles.registroInfo}>
               <Text style={[styles.registroCorte, { color: colors.text }]}>{r.corte}</Text>
@@ -290,30 +350,86 @@ export default function Despiece() {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.pageTitle, { color: colors.text, fontSize: titleSize }]}>Despiece</Text>
+        <Image source={require('../../assets/images/entradas/cerdo cortes.jpg')} style={styles.cardImage} contentFit="contain" />
         <View style={[styles.mainCard, { backgroundColor: colors.card, width: cardWidth, padding: cardPadding }]}>
           <View style={styles.pasosRow}>
-            {renderPasoNumero(1, 'Categoría', step === 'categoria')}
+            {renderPasoNumero(1, 'Canal')}
             <View style={[styles.pasoLinea, { borderColor: colors.accent + '44', width: pasoLineWidth }]} />
-            {renderPasoNumero(2, 'Corte y peso', step === 'corte')}
+            {renderPasoNumero(2, 'Categoría')}
             <View style={[styles.pasoLinea, { borderColor: colors.accent + '44', width: pasoLineWidth }]} />
-            {renderPasoNumero(3, 'Tara', step === 'tara')}
+            {renderPasoNumero(3, 'Corte y peso')}
+            <View style={[styles.pasoLinea, { borderColor: colors.accent + '44', width: pasoLineWidth }]} />
+            {renderPasoNumero(4, 'Tara')}
           </View>
+          {step !== 'canal' && (
+            <TouchableOpacity style={[styles.volverBtn, { borderColor: colors.accent + '44', backgroundColor: colors.accent + '15' }]} onPress={volverPaso}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={colors.accent} />
+            </TouchableOpacity>
+          )}
+
+          {step === 'canal' && (
+            <View style={styles.stepContent}>
+              <Text style={[styles.stepTitle, { color: colors.text }]}>Selecciona un canal</Text>
+              {cargandoCanales ? (
+                <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 20 }} />
+              ) : canales.length === 0 ? (
+                <Text style={{ color: '#888', textAlign: 'center', marginTop: 12, fontSize: 14 }}>
+                  No hay canales disponibles para tu sucursal.
+                </Text>
+              ) : (
+                <View style={styles.canalGrid}>
+                  {canales.map(c => {
+                    const conCortes = registros.some(r => r.numCanal === c.num_canal);
+                    const seleccionado = numCanal === c.num_canal;
+                    return (
+                      <TouchableOpacity
+                        key={c.num_canal}
+                        style={[styles.canalCard, {
+                          backgroundColor: seleccionado ? colors.accent : colors.accent + '15',
+                          borderColor: seleccionado ? colors.accent : (conCortes ? '#4CAF50' : 'transparent'),
+                        }]}
+                        onPress={() => seleccionarCanal(c.num_canal)}
+                      >
+                        <Text style={[styles.canalCardNum, { color: seleccionado ? '#fff' : colors.text }]}>
+                          Canal {c.num_canal}
+                        </Text>
+                        <Text style={[styles.canalCardPeso, { color: seleccionado ? '#fff' : colors.text + '99' }]}>
+                          {c.peso.toFixed(2)} kg
+                        </Text>
+                        {conCortes && (
+                          <MaterialCommunityIcons name="check-circle" size={18} color={seleccionado ? '#fff' : '#4CAF50'} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
 
           {step === 'categoria' && (
             <View style={styles.stepContent}>
               <Text style={[styles.stepTitle, { color: colors.text }]}>Selecciona una categoría</Text>
-              <View style={styles.categoriasGrid}>
-                {categorias.map(cat => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.categoriaCard, { backgroundColor: cat.nombre === categoria ? colors.accent : colors.accent + '15', borderColor: cat.nombre === categoria ? colors.accent : 'transparent', width: catItemWidth }]}
-                    onPress={() => handleSelectCategoria(cat.nombre)}
-                  >
-                    <MaterialCommunityIcons name={cat.icono as any} size={28} color={cat.nombre === categoria ? '#fff' : colors.accent} />
-                    <Text style={[styles.categoriaText, { color: cat.nombre === categoria ? '#fff' : colors.text }]}>{cat.nombre}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {cargandoProductos ? (
+                <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 20 }} />
+              ) : categorias.length === 0 ? (
+                <Text style={{ color: '#888', textAlign: 'center', marginTop: 12, fontSize: 14 }}>
+                  No hay subcategorías disponibles.
+                </Text>
+              ) : (
+                <View style={styles.categoriasGrid}>
+                  {categorias.map(cat => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[styles.categoriaCard, { backgroundColor: cat === categoria ? colors.accent : colors.accent + '15', borderColor: cat === categoria ? colors.accent : 'transparent', width: catItemWidth }]}
+                      onPress={() => handleSelectCategoria(cat)}
+                    >
+                      <MaterialCommunityIcons name={iconoSubcategoria(cat) as any} size={28} color={cat === categoria ? '#fff' : colors.accent} />
+                      <Text style={[styles.categoriaText, { color: cat === categoria ? '#fff' : colors.text }]}>{cat}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
@@ -326,18 +442,26 @@ export default function Despiece() {
                 </View>
               )}
               <Text style={[styles.sectionLabel, { color: colors.text + 'aa' }]}>Selecciona el corte</Text>
-              <View style={styles.cortesGrid}>
-                {cortes.map(c => (
-                  <TouchableOpacity
-                    key={c.nombre}
-                    style={[styles.corteCard, { backgroundColor: c.nombre === corte ? colors.accent : colors.accent + '10', borderColor: c.nombre === corte ? colors.accent : 'transparent', width: corteItemWidth }]}
-                    onPress={() => handleSelectCorte(c.nombre)}
-                  >
-                    <MaterialCommunityIcons name={c.icono as any} size={24} color={c.nombre === corte ? '#fff' : colors.accent} />
-                    <Text style={[styles.corteName, { color: c.nombre === corte ? '#fff' : colors.text }]}>{c.nombre}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {cargandoProductos ? (
+                <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 20 }} />
+              ) : cortes.length === 0 ? (
+                <Text style={{ color: '#888', textAlign: 'center', marginTop: 12, fontSize: 14 }}>
+                  No hay productos registrados en esta categoría.
+                </Text>
+              ) : (
+                <View style={styles.cortesGrid}>
+                  {cortes.map(c => (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.corteCard, { backgroundColor: c.nombre === corte ? colors.accent : colors.accent + '10', borderColor: c.nombre === corte ? colors.accent : 'transparent', width: corteItemWidth }]}
+                      onPress={() => handleSelectCorte(c.nombre)}
+                    >
+                      <MaterialCommunityIcons name="food-steak" size={24} color={c.nombre === corte ? '#fff' : colors.accent} />
+                      <Text style={[styles.corteName, { color: c.nombre === corte ? '#fff' : colors.text }]}>{c.nombre}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
               {corte && (
                 <View style={styles.pesoContainer}>
                   <Text style={[styles.sectionLabel, { color: colors.text + 'aa' }]}>Peso del corte (kg)</Text>
@@ -382,65 +506,58 @@ export default function Despiece() {
                 </View>
               ) : (
                 <View style={styles.taraPanel}>
-                  <Text style={[styles.sectionLabel, { color: colors.text + 'aa' }]}>Categoría de tara</Text>
-                  <TouchableOpacity
-                    style={[styles.taraDropdown, { borderColor: colors.accent }]}
-                    onPress={() => setTaraCategoriaDropdown(!taraCategoriaDropdown)}
-                  >
-                    <Text style={[styles.taraDropdownText, { color: taraCategoria ? colors.text : '#888' }]}>
-                      {taraCategoria || 'Seleccionar'}
-                    </Text>
-                    <MaterialCommunityIcons name="chevron-down" size={20} color={colors.text} />
-                  </TouchableOpacity>
-                  {taraCategoriaDropdown && (
-                    <View style={[styles.taraDropdownMenu, { backgroundColor: colors.card, borderColor: colors.accent }]}>
-                      {categoriasTara.map(cat => (
-                        <TouchableOpacity
-                          key={cat}
-                          style={styles.taraDropdownItem}
-                          onPress={() => { setTaraCategoria(cat); setTaraItem(null); setTaraCategoriaDropdown(false); }}
-                        >
-                          <MaterialCommunityIcons name="package-variant" size={18} color={colors.text} />
-                          <Text style={[styles.taraDropdownItemText, { color: colors.text, marginLeft: 8 }]}>{cat}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                  {taraCategoria && (
+                  <Text style={[styles.sectionLabel, { color: colors.text + 'aa' }]}>Selecciona el elemento de tara</Text>
+                  <View style={styles.taraGrid}>
+                    {taraOpciones.map(item => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[styles.taraItemCard, { borderColor: taraItem?.id === item.id ? colors.accent : colors.accent + '33', backgroundColor: taraItem?.id === item.id ? colors.accent + '15' : 'transparent' }]}
+                        onPress={() => seleccionarTara(item)}
+                      >
+                        <MaterialCommunityIcons name={item.icono as any} size={26} color={taraItem?.id === item.id ? colors.accent : colors.text + '99'} />
+                        <Text style={[styles.taraItemName, { color: colors.text }]}>{item.nombre}</Text>
+                        <Text style={[styles.taraItemPeso, { color: colors.accent }]}>{item.peso}</Text>
+                      </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity
+                      style={[styles.taraItemCard, { borderColor: taraItem?.id === TARA_ESPECIAL.id ? colors.accent : colors.accent + '33', backgroundColor: taraItem?.id === TARA_ESPECIAL.id ? colors.accent + '15' : 'transparent' }]}
+                      onPress={() => seleccionarTara(TARA_ESPECIAL)}
+                    >
+                      <MaterialCommunityIcons name={TARA_ESPECIAL.icono as any} size={26} color={taraItem?.id === TARA_ESPECIAL.id ? colors.accent : colors.text + '99'} />
+                      <Text style={[styles.taraItemName, { color: colors.text }]}>{TARA_ESPECIAL.nombre}</Text>
+                      <Text style={[styles.taraItemPeso, { color: colors.accent }]}>Peso personalizado</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {taraEspecial && (
                     <>
-                      <Text style={[styles.sectionLabel, { color: colors.text + 'aa', marginTop: 12 }]}>Elemento de tara</Text>
-                      {opcionesTara[taraCategoria].map(item => (
-                        <TouchableOpacity
-                          key={item.id}
-                          style={[styles.taraItemCard, { borderColor: taraItem?.id === item.id ? colors.accent : colors.accent + '33', backgroundColor: taraItem?.id === item.id ? colors.accent + '15' : 'transparent' }]}
-                          onPress={() => setTaraItem(item)}
-                        >
-                          <MaterialCommunityIcons name={item.icono as any} size={22} color={taraItem?.id === item.id ? colors.accent : colors.text + '99'} />
-                          <View style={{ flex: 1, marginLeft: 12 }}>
-                            <Text style={[styles.taraItemName, { color: colors.text }]}>{item.nombre}</Text>
-                            <Text style={[styles.taraItemPeso, { color: colors.accent }]}>{item.peso}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                      <Text style={[styles.sectionLabel, { color: colors.text + 'aa', marginTop: 12 }]}>Cantidad</Text>
+                      <Text style={[styles.sectionLabel, { color: colors.text + 'aa', marginTop: 12 }]}>Peso de la tara (kg)</Text>
                       <TextInput
                         style={[styles.pesoInput, { borderColor: colors.accent, color: colors.text }]}
-                        placeholder="0"
+                        placeholder="0.000"
                         placeholderTextColor="#888"
                         keyboardType="decimal-pad"
-                        value={taraCantidad}
-                        onChangeText={t => setTaraCantidad(t.replace(/[^0-9.]/g, ''))}
+                        value={taraEspecialPeso}
+                        onChangeText={t => setTaraEspecialPeso(t.replace(/[^0-9.]/g, ''))}
                       />
                     </>
                   )}
+                  <Text style={[styles.sectionLabel, { color: colors.text + 'aa', marginTop: 12 }]}>Cantidad</Text>
+                  <TextInput
+                    style={[styles.pesoInput, { borderColor: colors.accent, color: colors.text }]}
+                    placeholder="0"
+                    placeholderTextColor="#888"
+                    keyboardType="decimal-pad"
+                    value={taraCantidad}
+                    onChangeText={t => setTaraCantidad(t.replace(/[^0-9.]/g, ''))}
+                  />
                   <View style={styles.stepButtons}>
                     <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.accent }]} onPress={handleTaraNo}>
                       <Text style={[styles.secondaryBtnText, { color: colors.accent }]}>Sin tara</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.primaryBtn, { backgroundColor: colors.accent, opacity: taraItem && taraCantidad ? 1 : 0.5 }]}
+                      style={[styles.primaryBtn, { backgroundColor: colors.accent, opacity: taraItem && taraCantidad && (!taraEspecial || parseFloat(taraEspecialPeso) > 0) ? 1 : 0.5 }]}
                       onPress={handleAplicarTara}
-                      disabled={!taraItem || !taraCantidad}
+                      disabled={!taraItem || !taraCantidad || (taraEspecial && !(parseFloat(taraEspecialPeso) > 0))}
                     >
                       <Text style={styles.primaryBtnText}>Guardar</Text>
                       <MaterialCommunityIcons name="check" size={18} color="#fff" />
@@ -454,10 +571,15 @@ export default function Despiece() {
 
         {renderRegistros()}
 
-        {registros.length > 0 && (
-          <TouchableOpacity style={[styles.finalizarBtn, { backgroundColor: colors.accent }]} onPress={handleFinalizar}>
+        {canales.length > 0 && (
+          <TouchableOpacity
+            style={[styles.finalizarBtn, { backgroundColor: puedeFinalizar ? colors.accent : '#888' }]}
+            onPress={puedeFinalizar ? handleFinalizar : undefined}
+          >
             <MaterialCommunityIcons name="check-circle" size={22} color="#fff" />
-            <Text style={styles.finalizarBtnText}>Finalizar Despiece ({registros.length} cortes)</Text>
+            <Text style={styles.finalizarBtnText}>
+              {puedeFinalizar ? `Finalizar Despiece (${canalesCompletados.length} canales)` : `Faltan ${canalesPendientes.length} canales por despiezar`}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -468,7 +590,8 @@ export default function Despiece() {
           <View style={[styles.modalContent, { backgroundColor: colors.card, width: isMobile ? width * 0.9 : isTablet ? 500 : 600 }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Finalizar Despiece</Text>
             <Text style={[styles.modalSubtitle, { color: colors.text + '99' }]}>
-              ¿Está seguro que los datos capturados son correctos?
+              {canalesCompletados.length} de {canales.length} canales despiezados.
+              {'\n'}¿Está seguro que los datos capturados son correctos?
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowFinalizarModal(false)}>
@@ -490,6 +613,24 @@ export default function Despiece() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   pageTitle: { fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
+  cardImage: {
+    width: 260,
+    height: 160,
+    alignSelf: 'center',
+    marginBottom: 16,
+    borderRadius: 12,
+  },
+  volverBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    width: 48,
+    height: 48,
+    borderWidth: 1,
+    borderRadius: 24,
+    marginBottom: 16,
+  },
   scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 40, paddingHorizontal: 16, paddingTop: 24 },
   mainCard: { borderRadius: 20, padding: 24, marginBottom: 16,elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
@@ -501,6 +642,19 @@ const styles = StyleSheet.create({
   stepContent: { },
   stepTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
   sectionLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8 },
+  canalGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  canalCard: {
+    width: '22%',
+    aspectRatio: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    padding: 6,
+  },
+  canalCardNum: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  canalCardPeso: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
   categoriasGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   categoriaCard: {
     paddingVertical: 20, paddingHorizontal: 16, borderRadius: 14,
@@ -532,14 +686,24 @@ const styles = StyleSheet.create({
   taraChoiceBtn: { width: 120, paddingVertical: 20, borderRadius: 16, alignItems: 'center' },
   taraChoiceText: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginTop: 4 },
   taraPanel: { marginTop: 12 },
-  taraDropdown: { flexDirection: 'row', alignItems: 'center', height: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, justifyContent: 'space-between' },
-  taraDropdownText: { fontSize: 15 },
-  taraDropdownMenu: { borderWidth: 1, borderRadius: 12, marginTop: 4, padding: 4, elevation: 4 },
-  taraDropdownItem: { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  taraDropdownItemText: { fontSize: 14 },
-  taraItemCard: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, marginBottom: 6 },
-  taraItemName: { fontSize: 14, fontWeight: '500' },
-  taraItemPeso: { fontSize: 12, fontWeight: '600' },
+  taraGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+  },
+  taraItemCard: {
+    width: '22%',
+    aspectRatio: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    gap: 4,
+  },
+  taraItemName: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  taraItemPeso: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
   registrosCard: { borderRadius: 20, padding: 20, marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
   registroRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, paddingVertical: 10 },

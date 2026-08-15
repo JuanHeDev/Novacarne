@@ -10,6 +10,7 @@ export type CorteTara = {
 
 export type Registro = {
   id: string;
+  numCanal: number;
   categoria: string;
   corte: string;
   peso: number;
