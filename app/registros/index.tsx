@@ -41,6 +41,11 @@ export default function Registros() {
             <Text style={[styles.optionText, { color: colors.text }]}>Producto</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={[styles.optionButton, { borderColor: colors.accent }]} onPress={() => router.push('/registros/proveedor')}>
+            <MaterialCommunityIcons name="truck-delivery" size={buttonIconSize} color={colors.accent} />
+            <Text style={[styles.optionText, { color: colors.text }]}>Proveedor</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={[styles.optionButton, { borderColor: colors.accent }]} onPress={() => router.push('/registros/lote-preliminar')}>
             <MaterialCommunityIcons name="pig" size={buttonIconSize} color={colors.accent} />
             <Text style={[styles.optionText, { color: colors.text }]}>Lote Preliminar</Text>

@@ -6,7 +6,7 @@ import Header from '../../components/Header';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabase';
 
-const categorias = ['Carnes', 'Embutidos', 'Limpieza', 'Empaque', 'Otros'];
+const categorias = ['carnes', 'subcerdo', 'embutidos', 'lacteos', 'bimbo'];
 const unidades = ['kg', 'pzas'];
 
 function generarCode128(): string {
@@ -35,6 +35,7 @@ export default function ProductoScreen() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
+  const [alertTipo, setAlertTipo] = useState<'success' | 'error' | 'info'>('info');
 
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
@@ -45,15 +46,31 @@ export default function ProductoScreen() {
 
   const handleRegistrar = async () => {
     if (!nombre.trim() || !categoria || !unidad) {
+      setAlertTipo('error');
       setAlertTitle('Campos incompletos');
       setAlertMessage('Todos los campos son obligatorios.');
       setAlertVisible(true);
       return;
     }
 
+    const { data: existente } = await supabase
+      .from('productos')
+      .select('id')
+      .ilike('nombre', nombre.trim())
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (existente) {
+      setAlertTipo('error');
+      setAlertTitle('Producto ya existe');
+      setAlertMessage(`Ya existe un producto registrado con el nombre "${nombre.trim()}".`);
+      setAlertVisible(true);
+      return;
+    }
+
     const payload = {
       codigo_barras: generarCode128(),
-      nombre: nombre.trim(),
+      nombre: nombre.trim().toUpperCase(),
       categoria,
       unidad_medida: unidad,
       precio_venta: 0,
@@ -65,6 +82,7 @@ export default function ProductoScreen() {
       .insert(payload);
 
     if (error) {
+      setAlertTipo('error');
       setAlertTitle('Error al registrar');
       setAlertMessage(error.message);
       setAlertVisible(true);
@@ -76,6 +94,7 @@ export default function ProductoScreen() {
     setUnidad('');
     setInsumo(false);
 
+    setAlertTipo('success');
     setAlertTitle('Registrado');
     setAlertMessage('Producto registrado correctamente.');
     setAlertVisible(true);
@@ -172,7 +191,7 @@ export default function ProductoScreen() {
         </View>
       </Modal>
 
-      <AlertModal visible={alertVisible} title={alertTitle} message={alertMessage} onClose={() => setAlertVisible(false)} />
+      <AlertModal visible={alertVisible} title={alertTitle} message={alertMessage} tipo={alertTipo} onClose={() => setAlertVisible(false)} />
     </View>
   );
 }
