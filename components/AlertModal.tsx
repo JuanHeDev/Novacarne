@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -23,7 +23,7 @@ export default function AlertModal({ visible, title, message, onClose, tipo = 'i
   const { colors } = useTheme();
 
   const tipoColor = tipo === 'success' ? '#27ae60' : tipo === 'error' ? '#e74c3c' : colors.accent;
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (visible) {
@@ -74,10 +74,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.25)',
   },
   iconCircle: {
     width: 72,

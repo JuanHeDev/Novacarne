@@ -32,7 +32,6 @@ export default function Index() {
     return () => { activo = false; };
   }, []);
 
-  const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 
@@ -41,7 +40,6 @@ export default function Index() {
   const logoSize = isWeb ? 150 : isTablet ? 120 : 110;
   const fontSize = isWeb ? 30 : isTablet ? 26 : 22;
   const buttonIconSize = isWeb ? 42 : isTablet ? 36 : 32;
-  const buttonSize = isWeb ? 72 : isTablet ? 64 : 60;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

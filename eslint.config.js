@@ -7,4 +7,11 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*'],
   },
+  {
+    rules: {
+      // Las pantallas cargan datos al montar (setCargando(true) dentro del fetch).
+      // Patrón válido; se deja como aviso hasta migrar a un hook de datos.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
+  },
 ]);

@@ -19,7 +19,6 @@ export default function Login() {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
 
-  const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 
@@ -152,10 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
   },
   logo: {
     borderWidth: 3,

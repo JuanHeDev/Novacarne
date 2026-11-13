@@ -31,7 +31,7 @@ function AuthGuard() {
     } else if (session && inAuthGroup) {
       router.replace('/');
     }
-  }, [session, segments]);
+  }, [session, segments, router]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -45,7 +45,7 @@ function AuthGuard() {
 }
 
 function RootLayoutContent() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [showSplash, setShowSplash] = useState(false);
@@ -78,7 +78,7 @@ function RootLayoutContent() {
 
   return (
     <>
-      <StatusBar style={colors.background === '#efe3ca' ? 'dark' : 'light'} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <EntradasProvider>
         <CanalProvider>
           <DespieceProvider>

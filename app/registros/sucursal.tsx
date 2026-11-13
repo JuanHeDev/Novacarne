@@ -43,8 +43,6 @@ export default function SucursalScreen() {
   const cardWidth = isWeb ? 700 : isTablet ? 600 : width * 0.92;
   const titleSize = isWeb ? 26 : isTablet ? 22 : 18;
 
-  useEffect(() => { fetchSucursales(); }, []);
-
   const fetchSucursales = async () => {
     setCargando(true);
     const { data, error } = await supabase
@@ -174,6 +172,8 @@ export default function SucursalScreen() {
     setShowEditModal(false);
     setEditSucursal(null);
   };
+
+  useEffect(() => { fetchSucursales(); }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

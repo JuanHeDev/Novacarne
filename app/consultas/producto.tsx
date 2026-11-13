@@ -5,6 +5,7 @@ import { ActivityIndicator, Modal, ScrollView, StatusBar, StyleSheet, Switch, Te
 import AlertModal from '../../components/AlertModal';
 import Header from '../../components/Header';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getPerfil } from '../../lib/perfil';
 import { supabase } from '../../lib/supabase';
 
 const categorias = ['Carnes', 'Embutidos', 'Limpieza', 'Empaque', 'Otros'];
@@ -31,6 +32,8 @@ export default function ConsultaProductos() {
   const [cargando, setCargando] = useState(true);
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [mostrarEliminados, setMostrarEliminados] = useState(false);
+  // Solo el administrador puede editar, archivar y restaurar (también lo exige RLS)
+  const [esAdmin, setEsAdmin] = useState(false);
 
   const [pagina, setPagina] = useState(1);
   const porPagina = 10;
@@ -58,10 +61,6 @@ export default function ConsultaProductos() {
   const cardWidth = isWeb ? 700 : isTablet ? 600 : width * 0.92;
   const titleSize = isWeb ? 26 : isTablet ? 22 : 18;
 
-  useEffect(() => {
-    fetchProductos();
-  }, []);
-
   const fetchProductos = async () => {
     setCargando(true);
     const { data, error } = await supabase
@@ -77,7 +76,7 @@ export default function ConsultaProductos() {
   };
 
   const productosVisibles = productos.filter(p => {
-    if (filtroCategoria && p.categoria !== filtroCategoria) return false;
+    if (filtroCategoria && p.categoria.toLowerCase() !== filtroCategoria.toLowerCase()) return false;
     if (!mostrarEliminados && p.deleted_at) return false;
     return true;
   });
@@ -87,6 +86,7 @@ export default function ConsultaProductos() {
   const productosPagina = productosVisibles.slice((paginaSegura - 1) * porPagina, paginaSegura * porPagina);
 
   const handleEliminar = async (id: string) => {
+    if (!esAdmin) return;
     const { error } = await supabase
       .from('productos')
       .update({ deleted_at: new Date().toISOString() })
@@ -105,6 +105,7 @@ export default function ConsultaProductos() {
   };
 
   const handleRestaurar = async (id: string) => {
+    if (!esAdmin) return;
     const { error } = await supabase
       .from('productos')
       .update({ deleted_at: null })
@@ -123,6 +124,7 @@ export default function ConsultaProductos() {
   };
 
   const openEdit = (p: Producto) => {
+    if (!esAdmin) return;
     setEditProducto(p);
     setEditCategoria(p.categoria);
     setEditUnidad(p.unidad_medida);
@@ -132,7 +134,7 @@ export default function ConsultaProductos() {
   };
 
   const handleGuardarEdit = async () => {
-    if (!editCategoria || !editUnidad || !editProducto) return;
+    if (!esAdmin || !editCategoria || !editUnidad || !editProducto) return;
 
     const { error } = await supabase
       .from('productos')
@@ -169,6 +171,18 @@ export default function ConsultaProductos() {
     }
     setPickerVisible(false);
   };
+
+  useEffect(() => {
+    fetchProductos();
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+    getPerfil().then(perfil => {
+      if (activo) setEsAdmin(perfil?.rol === 'administrador');
+    });
+    return () => { activo = false; };
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -249,6 +263,7 @@ export default function ConsultaProductos() {
                         )}
                       </View>
                     </View>
+                    {esAdmin && (
                     <View style={styles.productoAcciones}>
                       {p.deleted_at ? (
                         <TouchableOpacity style={[styles.accionBtn, { backgroundColor: '#27ae6022' }]} onPress={() => handleRestaurar(p.id)}>
@@ -265,6 +280,7 @@ export default function ConsultaProductos() {
                         </>
                       )}
                     </View>
+                    )}
                   </View>
                   <View style={[styles.productoCardFooter, { borderTopColor: colors.accent + '22' }]}>
                     <View>

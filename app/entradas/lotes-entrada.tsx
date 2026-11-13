@@ -124,12 +124,6 @@ export default function LotesEntrada() {
     setUsuarioCaptura(perfil.nombre_completo);
   };
 
-  useEffect(() => {
-    fetchPreliminares();
-    fetchSucursales();
-    fetchPerfil();
-  }, []);
-
   const handleAceptar = () => {
     setShowSeleccionModal(true);
   };
@@ -175,7 +169,6 @@ export default function LotesEntrada() {
     const payload = {
       fecha_recepcion: new Date().toISOString(),
       cantidad_canales: numCanales,
-      peso_total_lote: pesoTotal,
       proveedor: PROVEEDOR_FIJO,
       notas: notas.trim() || null,
       preliminar_lote_id: preliminarId,
@@ -202,6 +195,12 @@ export default function LotesEntrada() {
     completarCanal();
     router.back();
   };
+
+  useEffect(() => {
+    fetchPreliminares();
+    fetchSucursales();
+    fetchPerfil();
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

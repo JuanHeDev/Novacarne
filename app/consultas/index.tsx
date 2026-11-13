@@ -9,7 +9,6 @@ export default function Consultas() {
   const { width } = useWindowDimensions();
   const { isDark, colors } = useTheme();
 
-  const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 

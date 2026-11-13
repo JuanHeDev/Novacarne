@@ -21,7 +21,6 @@ export default function ProveedorScreen() {
   const [alertMessage, setAlertMessage] = useState('');
   const [alertTipo, setAlertTipo] = useState<'success' | 'error' | 'info'>('info');
 
-  const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
   const isWeb = width >= 1024;
 

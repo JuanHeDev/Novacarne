@@ -64,10 +64,6 @@ export default function PerfilScreen() {
   const cardWidth = isWeb ? 700 : isTablet ? 600 : width * 0.92;
   const titleSize = isWeb ? 26 : isTablet ? 22 : 18;
 
-  useEffect(() => {
-    init();
-  }, []);
-
   const init = async () => {
     setCargando(true);
 
@@ -215,6 +211,10 @@ export default function PerfilScreen() {
     else if (pickerTarget === 'editSucursal') setEditSucursalId(pickerValues[pickerItems.indexOf(label)] || '');
     setPickerVisible(false);
   };
+
+  useEffect(() => {
+    init();
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

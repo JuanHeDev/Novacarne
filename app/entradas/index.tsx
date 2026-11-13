@@ -34,8 +34,6 @@ export default function Entradas() {
 
   const cardWidth = isWeb ? 500 : isTablet ? 450 : width * 0.9;
   const cardPadding = isWeb ? 32 : isTablet ? 28 : 24;
-  const titleSize = isWeb ? 28 : isTablet ? 24 : 20;
-  const bodySize = isWeb ? 16 : isTablet ? 15 : 14;
 
   const handleNuevoLote = () => {
     setNuevoLoteActivo(true);

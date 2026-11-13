@@ -8,6 +8,12 @@ const corsHeaders = {
   'Content-Type': 'application/json',
 }
 
+const ROL_ADMIN = 'administrador'
+
+function json(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), { status, headers: corsHeaders })
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -15,8 +21,9 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: corsHeaders })
+    const token = authHeader?.replace(/^Bearer\s+/i, '')
+    if (!token) {
+      return json({ error: 'No autorizado' }, 401)
     }
 
     const supabase = createClient(
@@ -25,10 +32,26 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
+    // Verificar que el llamador sea un usuario válido y administrador
+    const { data: callerData, error: callerError } = await supabase.auth.getUser(token)
+    if (callerError || !callerData?.user) {
+      return json({ error: 'No autorizado' }, 401)
+    }
+
+    const { data: callerPerfil } = await supabase
+      .from('perfiles')
+      .select('rol, deleted_at')
+      .eq('id', callerData.user.id)
+      .maybeSingle()
+
+    if (!callerPerfil || callerPerfil.deleted_at || callerPerfil.rol !== ROL_ADMIN) {
+      return json({ error: 'Solo un administrador puede crear usuarios' }, 403)
+    }
+
     const { email, password, nombre_completo, rol, sucursal_id } = await req.json()
 
     if (!email || !password || !nombre_completo || !rol) {
-      return new Response(JSON.stringify({ error: 'Faltan campos requeridos' }), { status: 400, headers: corsHeaders })
+      return json({ error: 'Faltan campos requeridos' }, 400)
     }
 
     const { data: userData, error: createError } = await supabase.auth.admin.createUser({
@@ -39,29 +62,20 @@ serve(async (req) => {
     })
 
     if (createError) {
-      if (createError.message?.toLowerCase().includes('already been registered') || createError.message?.toLowerCase().includes('already registered')) {
-        const { data: users } = await supabase.auth.admin.listUsers()
-        const existing = users?.users?.find(u => u.email === email)
-        if (!existing) {
-          return new Response(JSON.stringify({ error: `El correo "${email}" ya está registrado en Authentication pero no se pudo recuperar el usuario.` }), { status: 400, headers: corsHeaders })
-        }
-        await supabase.from('perfiles').upsert({
-          id: existing.id,
-          nombre_completo,
-          rol,
-          sucursal_id: sucursal_id || null,
-        }, { onConflict: 'id' })
-        return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
+      const msg = createError.message?.toLowerCase() ?? ''
+      if (msg.includes('already been registered') || msg.includes('already registered')) {
+        // No se modifica el perfil de cuentas existentes desde aquí
+        return json({ error: `El correo "${email}" ya está registrado.` }, 409)
       }
-      return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: corsHeaders })
+      return json({ error: createError.message }, 400)
     }
 
     if (!userData.user) {
-      return new Response(JSON.stringify({ error: 'No se pudo crear el usuario' }), { status: 500, headers: corsHeaders })
+      return json({ error: 'No se pudo crear el usuario' }, 500)
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
-  } catch (err) {
-    return new Response(JSON.stringify({ error: 'Error interno del servidor' }), { status: 500, headers: corsHeaders })
+    return json({ success: true }, 200)
+  } catch (_err) {
+    return json({ error: 'Error interno del servidor' }, 500)
   }
 })

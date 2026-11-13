@@ -34,11 +34,15 @@ type PesoEditable = {
   peso: string;
 };
 
-const formatNum = (n: number, decimals = 2) =>
-  n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+const formatNum = (n: number | null | undefined, decimals = 2) => {
+  if (n == null || isNaN(n)) return '0.00';
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
 
-const formatFechaHora = (iso: string) =>
-  new Date(iso).toLocaleString('es-CO', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const formatFechaHora = (iso: string | null | undefined) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('es-CO', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
 
 export default function ConsultaLotes() {
   const { width } = useWindowDimensions();
@@ -81,11 +85,6 @@ export default function ConsultaLotes() {
     else if (error) console.error('Error fetching preliminar_lote:', JSON.stringify(error, null, 2));
     setCargando(false);
   };
-
-  useEffect(() => {
-    fetchPreliminares();
-    fetchCanalesPorPreliminar();
-  }, []);
 
   const fetchEntradas = async (preliminarId: string) => {
     setCargandoEntradas(true);
@@ -210,13 +209,11 @@ export default function ConsultaLotes() {
     const pesos = editPesos
       .map(p => ({ num_canal: p.num_canal, peso: parseFloat(p.peso) }))
       .filter(p => !isNaN(p.peso) && p.peso > 0);
-    const pesoTotal = pesos.reduce((sum, p) => sum + p.peso, 0);
 
     const { error } = await supabase
       .from('lotes_entrada')
       .update({
         pesos_canales: pesos,
-        peso_total_lote: pesoTotal,
         cantidad_canales: pesos.length,
       })
       .eq('id', editEntrada.id);
@@ -238,6 +235,11 @@ export default function ConsultaLotes() {
     if (seleccionado) fetchEntradas(seleccionado.id);
     fetchCanalesPorPreliminar();
   };
+
+  useEffect(() => {
+    fetchPreliminares();
+    fetchCanalesPorPreliminar();
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -452,7 +454,7 @@ export default function ConsultaLotes() {
                       <Text style={[styles.canalLabel, { color: editMode ? colors.text : '#999' }]}>Canal {p.num_canal}</Text>
                       <View style={[styles.canalInputContainer, { borderColor: editMode ? colors.accent : '#bbb' }, !editMode && styles.canalInputReadonly]}>
                         <TextInput
-                          style={[styles.canalInput, { color: editMode ? colors.text : '#777' }]}
+                          style={[styles.canalInput, { color: editMode ? colors.text : '#777', pointerEvents: editMode ? 'auto' : 'none' }]}
                           value={p.peso}
                           onChangeText={text => editMode && actualizarPeso(p.num_canal, filtrarPeso(text))}
                           keyboardType="decimal-pad"
@@ -460,7 +462,6 @@ export default function ConsultaLotes() {
                           placeholderTextColor="#999"
                           textAlign="center"
                           editable={editMode}
-                          pointerEvents={editMode ? 'auto' : 'none'}
                         />
                         <Text style={[styles.canalUnit, { color: editMode ? colors.text + '99' : '#999' }]}>kg</Text>
                       </View>
@@ -557,10 +558,7 @@ const styles = StyleSheet.create({
     gap: 14,
     width: '100%',
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 2,
   },
   tarjetaHeader: {
