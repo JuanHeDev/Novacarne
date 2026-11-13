@@ -112,8 +112,7 @@ create policy proveedores_update_admin on public.proveedores
 
 -- ---------------------------------------------------------------------
 -- productos  (lectura: despiece, consultas/producto)
--- Solo el administrador crea, edita, archiva (deleted_at) y restaura.
--- La pantalla consultas/producto oculta esos botones a otros roles.
+-- La edición se restringe a admin en 20261113210000_productos_solo_admin.sql
 -- ---------------------------------------------------------------------
 create policy productos_select on public.productos
   for select to authenticated
@@ -123,10 +122,10 @@ create policy productos_insert_admin on public.productos
   for insert to authenticated
   with check (public.es_admin());
 
-create policy productos_update_admin on public.productos
+create policy productos_update on public.productos
   for update to authenticated
-  using (public.es_admin())
-  with check (public.es_admin());
+  using (true)
+  with check (true);
 
 -- ---------------------------------------------------------------------
 -- preliminar_lote  (alta en /registros; lectura en entradas y consultas)
